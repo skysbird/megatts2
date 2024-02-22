@@ -13,20 +13,41 @@ Unofficial implementation of Megatts2
 - [ ] Train on about 1k hours of speech
 - [ ] Webui
 
+## colab
+mkdir -p ~/miniconda3
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda3/miniconda.sh
+bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
+rm -rf ~/miniconda3/miniconda.sh
+
+export PATH=$PATH:/root/miniconda3/bin
+
 ## Install mfa
 1. conda create -n aligner && conda activate aligner
 2. conda install -c conda-forge montreal-forced-aligner=2.2.17
 
+wget https://us.openslr.org/resources/60/test-clean.tar.gz
+tar xzf test-clean.tar.gz
+
+cd drive/MyDrive/megatts2/   
+
+pip install pypinyin
+pip install phonemizer
+pip install lhotse
+pip install speechbrain
+pip install -r requirements.txt
+
 ## Prepare dataset
 1. Prepare wav and txt files to ./data/wav 
-2. Run `python3 prepare_ds.py --stage 0 --num_workers 4 --wavtxt_path data/wavs --text_grid_path data/textgrids --ds_path data/ds`
-3. mfa model download acoustic mandarin_mfa
-4. mfa align data/wavs utils/mandarin_pinyin_to_mfa_lty.dict mandarin_mfa data/textgrids --clean -j 12 -t /workspace/tmp
-5. Run `python3 prepare_ds.py --stage 1 --num_workers 4 --wavtxt_path data/wavs --text_grid_path data/textgrids --ds_path data/ds` 
+2. Run `python3 prepare_ds.py --stage 0 --num_workers 4 --wavtxt_path /content/data/wavs --text_grid_path /content/data/textgrids --ds_path /content/data/ds`
+3. mfa model download acoustic english_mfa
+mfa model download dictionary english_mfa
+4. mfa align /content/data/wavs english_mfa english_mfa /content/data/textgrids --clean -j 12 -t tmp
+5. Run `python3 prepare_ds.py --stage 1 --num_workers 4 --wavtxt_path /content/data/wavs --text_grid_path /content/data/textgrids --ds_path /content/data/ds` 
 6. Run `python3 prepare_ds.py --stage 2 --generator_config configs/config_gan.yaml --generator_ckpt generator.ckpt` after training generator.
 
 ## Train
 Training procedure refers to Pytorch-lightning
+python3 cli.py fit --config configs/config_adm.yaml 
 
 ## Infer test
 `python infer.py`
