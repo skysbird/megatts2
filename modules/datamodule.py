@@ -106,7 +106,12 @@ class TTSDataset(torch.utils.data.Dataset):
             same_spk_cuts = self.spk2cuts[cut.supervisions[0].speaker]
             same_spk_cuts = same_spk_cuts.sample(
                 n_cuts=min(n_sample, len(same_spk_cuts)))
-
+            if type(same_spk_cuts)!= CutSet:
+              print(type(same_spk_cuts))
+              print(same_spk_cuts)
+              print(cut.supervisions[0].speaker)
+              same_spk_cuts = [same_spk_cuts]
+              
             mel_timbres_same_spk, mel_timbre_lens_same_spk = collate_features(
                 same_spk_cuts,
                 executor=_get_executor(8, executor_type=ThreadPoolExecutor),)

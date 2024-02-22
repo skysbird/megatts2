@@ -4,7 +4,7 @@ trainer:
   logger:
     class_path: lightning.pytorch.loggers.tensorboard.TensorBoardLogger
     init_args:
-      save_dir: logs/
+      save_dir: /content/logs/
   callbacks:
     - class_path: lightning.pytorch.callbacks.ModelSummary
       init_args:
@@ -12,7 +12,7 @@ trainer:
     - class_path: lightning.pytorch.callbacks.ModelCheckpoint
       init_args:
         monitor: val/loss_re
-        filename: nikatts_ar_checkpoint_{epoch}_{step}_{val/loss_re:.4f}
+        filename: /content/nikatts_ar_checkpoint_{epoch}_{step}_{val/loss_re:.4f}
         save_top_k: 5
         save_last: true
         every_n_epochs: 1
