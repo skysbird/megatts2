@@ -57,7 +57,7 @@ class LengthRegulator(nn.Module):
 
 # 定义一个MRTE，这里我们假设Mel Encoder输出和Multi-Head Attention的结构和维度
 class MRTE(nn.Module):
-    def __init__(self, mel_dim, global_mel_dim, hidden_size, n_heads):
+    def __init__(self, phone_dim, mel_dim, global_mel_dim, hidden_size, n_heads):
         super(MRTE, self).__init__()
 
         self.mel_conv = nn.Conv1d(in_channels=mel_dim, out_channels=hidden_size, kernel_size=3, padding=1)
@@ -66,7 +66,7 @@ class MRTE(nn.Module):
         self.global_encoder = GlobalEncoder(first_channels=global_mel_dim)
         self.length_regulator = LengthRegulator()
 
-    def forward(self, mel_spec, global_mel_spec, target_length):
+    def forward(self, phone, mel_spec, global_mel_spec, target_length):
 
         # 先卷到目标维
         mel_spec = self.mel_conv(mel_spec)
@@ -77,7 +77,11 @@ class MRTE(nn.Module):
 
         mel_encoded = mel_encoded.permute(2,0,1)
         # Multi-Head Attention
-        attn_output, _ = self.multihead_attention(mel_encoded, mel_encoded, mel_encoded)  # [B, T, mel_dim]
+        print("p")
+        print(phone.shape)
+        print(mel_encoded.shape)
+        phone = phone.permute(1,0,2)
+        attn_output, _ = self.multihead_attention(phone, mel_encoded, mel_encoded)  # [B, T, mel_dim]
 
         # Global Encoder
         global_features = self.global_encoder(global_mel_spec)  # [B, global_dim]

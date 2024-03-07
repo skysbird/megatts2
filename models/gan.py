@@ -21,7 +21,7 @@ class VQGANTTS(nn.Module):
     def __init__(self):
         super(VQGANTTS, self).__init__()
         self.content_encoder = ContentEncoder()
-        self.mrte = MRTE(80,80,512,2)
+        self.mrte = MRTE(512, 80,80,512,2)
         self.vq_prosody_encoder = VQProsodyEncoder()
         self.mel_decoder = MelDecoder(first_channel=512 + 512) #vq and mrte dim
         self.plm = PLMModel()
@@ -31,14 +31,14 @@ class VQGANTTS(nn.Module):
     def forward(self, text, ref_audio):
         # Content Encoder forward pass
         content_features = self.content_encoder(text)
-
+        print(content_features.shape)
         # MRTE Encoder forward pass
         #TODO 
         # Assume the target length for each item after the length regulator is fixed at 100 for this test
         regulated_lengths = torch.full((1,), 100, dtype=torch.long)  # Example target lengths
 
         # Forward pass through the MRTE module
-        mrte_features = self.mrte(ref_audio, ref_audio, regulated_lengths)
+        mrte_features = self.mrte(content_features, ref_audio, ref_audio, regulated_lengths)
 
         # VQ Prosody Encoder forward pass
         print(ref_audio.shape)
@@ -80,9 +80,10 @@ class VQGANTTS(nn.Module):
         return self.gan_discriminator(mel)
 
 if __name__=='__main__':    # Example of usage
-    text_input = torch.randint(0, 50, (10,))  # Random text input sequence
+    text_input = torch.randint(0, 50, (120,)).unsqueeze(0)  # Random text input sequence
     ref_audio = torch.randn(1, 80, 120)  # Random reference audio in mel-spectrogram format
-
+    print("ttt")
+    print(text_input.shape)
     # Create the VQ-GAN TTS model
     vq_gan_tts_model = VQGANTTS()
 
