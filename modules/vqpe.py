@@ -64,7 +64,8 @@ class VQProsodyEncoder(nn.Module):
 def test():
     model = VQProsodyEncoder()
     mel = torch.randn(2, 303, 80)
-    zq, commit_loss, vq_loss = model(mel)
+    zq, commit_loss, vq_loss,codes = model(mel)
 
-    print(zq.shape, commit_loss.shape, vq_loss.shape)
+    print(zq.shape, commit_loss.shape, vq_loss.shape,codes.shape)
 
+test()

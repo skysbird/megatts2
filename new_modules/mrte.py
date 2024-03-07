@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mel_encoder import MelGenerator
+from .mel_encoder import MelGenerator
 
 # 假设全局编码器(GE)是一个简单的全连接层
 import torch
@@ -51,7 +51,9 @@ class LengthRegulator(nn.Module):
 
     def forward(self, x, target_length):
         # 简单重复序列来匹配目标长度
-        return x.repeat_interleave(target_length, dim=1)  # [B, T*target_length, D]
+        print(target_length)
+        print(x.shape)
+        return x.repeat_interleave(target_length, dim=0)  # [B, T*target_length, D]
 
 # 定义一个MRTE，这里我们假设Mel Encoder输出和Multi-Head Attention的结构和维度
 class MRTE(nn.Module):
@@ -84,14 +86,21 @@ class MRTE(nn.Module):
 
         # Length Regulator
         global_features = global_features.permute(2,0,1)
+        attn_output = attn_output.permute(0,1,2)
+        
         print(attn_output.shape)
         print(global_features.shape)
         # 合并Attention输出和全局特征
-        combined_output = torch.cat((attn_output, global_features), dim=2)  # [B, T*target_length, mel_dim+global_dim]
-        
-        regulated_output = self.length_regulator(combined_output, target_length)  # [B, T*target_length, mel_dim]
+        combined_output = torch.cat((attn_output, global_features), dim=0)  # [B, T*target_length, mel_dim+global_dim]
+        print(combined_output.shape)
 
-        return regulated_output
+        combined_output = combined_output.permute(1,0,2)
+        print(combined_output.shape)
+
+        #TODO c
+        regulated_output = self.length_regulator(combined_output, target_length)  # [ T*target_length, B,mel_dim]
+
+        return combined_output
 
 if __name__=='__main__':
     # Example usage
@@ -106,8 +115,9 @@ if __name__=='__main__':
     # Assume the target length for each item after the length regulator is fixed at 100 for this test
     regulated_lengths = torch.full((4,), 100, dtype=torch.long)  # Example target lengths
 
+    # print(regulated_lengths.shape)
     # Forward pass through the MRTE module
     mrte_output = mrte(test_mels, test_mels, regulated_lengths)
 
     print(f"MRTE output shape: {mrte_output.shape}")  # Expected shape: (target_length, batch_size, hidden_size)
-    print(mrte_output)
+    # print(mrte_output)

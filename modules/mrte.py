@@ -177,8 +177,8 @@ class MRTE(nn.Module):
             phone_lens: torch.Tensor,  # (B,)
             mel: torch.Tensor,  # (B, T, mel_bins)
     ):
-        tc_latent = self.tc_latent(phone, phone_lens, mel)
-        
+        tc_latent = self.tc_latent(phone,  mel)
+        print(tc_latent.shape)
         out = self.length_regulator(tc_latent, duration_tokens)
         return out
 
@@ -196,28 +196,24 @@ def test():
     mrte = MRTE(
         mel_bins = HIFIGAN_MEL_CHANNELS,
         mel_frames = HIFIGAN_HOP_LENGTH,
-        ff_dim = 1024,
-        n_heads = 2,
-        n_layers = 8,
         hidden_size = 512,
-        activation = 'ReLU',
-        kernel_size = 3,
-        stride = 16,
-        n_stacks = 5,
-        n_blocks = 2,
         duration_token_ms = (
             HIFIGAN_HOP_LENGTH / HIFIGAN_SR * 1000),
         phone_vocab_size = 320,
         dropout = 0.1,
         sample_rate = HIFIGAN_SR,
     )
-    mrte = mrte.to('cuda')
+    # mrte = mrte.to('cuda')
 
     duration_tokens = torch.tensor([[1, 2, 3, 4], [1, 1, 1, 2]]).to(
-        dtype=torch.int32).to('cuda')
+        dtype=torch.int32)
+    # .to('cuda')
 
-    t = torch.randint(0, 320, (2, 10)).to(dtype=torch.int64).to('cuda')
-    tl = torch.tensor([6, 10]).to(dtype=torch.int64).to('cuda')
-    m = torch.randn(2, 347, HIFIGAN_MEL_CHANNELS).to('cuda')
+    t = torch.randint(0, 320, (2, 10)).to(dtype=torch.int64)#.to('cuda')
+    tl = torch.tensor([6, 10]).to(dtype=torch.int64)#.to('cuda')
+    m = torch.randn(2, 347, HIFIGAN_MEL_CHANNELS)#.to('cuda')
 
     out = mrte(duration_tokens, t, tl, m)
+    print(out.shape)
+
+test()

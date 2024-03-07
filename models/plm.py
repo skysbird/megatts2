@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torch.nn import TransformerDecoder, TransformerDecoderLayer
 
-from embedding import SinePositionalEmbedding
+from new_modules.embedding import SinePositionalEmbedding
 
 class PLMModel(nn.Module):
     def __init__(self, d_model=2048, nhead=16, num_decoder_layers=24, dim_feedforward=8192, dropout=0.1):

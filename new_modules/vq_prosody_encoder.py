@@ -60,9 +60,9 @@ class VectorQuantization(nn.Module):
         return loss, quantized, perplexity, encodings
 
 class VQProsodyEncoder(nn.Module):
-    def __init__(self, hidden_size=320, conv_kernel_size=5, num_vq_embeddings=2048, vq_embedding_dim=256):
+    def __init__(self, hidden_size=512, conv_kernel_size=5, num_vq_embeddings=2048, vq_embedding_dim=256):
         super(VQProsodyEncoder, self).__init__()
-        self.conv_blocks = nn.Sequential(*[ConvBlock(hidden_size if i else 1, hidden_size, conv_kernel_size) for i in range(5)])
+        self.conv_blocks = nn.Sequential(*[ConvBlock(hidden_size if i else 80, hidden_size, conv_kernel_size) for i in range(5)])
         self.vq_layer = VectorQuantization(num_embeddings=num_vq_embeddings, embedding_dim=vq_embedding_dim)
 
     def forward(self, x):
@@ -72,7 +72,7 @@ class VQProsodyEncoder(nn.Module):
 
 if __name__ == "__main__":
     # Example input tensor (batch size, channels, sequence length)
-    x = torch.randn(1, 1, 100)  # Example mel-spectrogram input
+    x = torch.randn(1, 80, 100)  # Example mel-spectrogram input
 
     # Initialize VQProsodyEncoder
     encoder = VQProsodyEncoder()
