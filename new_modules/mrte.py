@@ -89,7 +89,7 @@ class MRTE(nn.Module):
         # 合并Attention输出和全局特征
         combined_output = torch.cat((attn_output, global_features), dim=2)  # [B, T*target_length, mel_dim+global_dim]
         
-        regulated_output = self.length_regulator(attn_output, target_length)  # [B, T*target_length, mel_dim]
+        regulated_output = self.length_regulator(combined_output, target_length)  # [B, T*target_length, mel_dim]
 
         return regulated_output
 
