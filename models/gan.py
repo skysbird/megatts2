@@ -80,7 +80,7 @@ class VQGANTTS(nn.Module):
         return self.gan_discriminator(mel)
 
 if __name__=='__main__':    # Example of usage
-    text_input = torch.randint(0, 50, (120,)).unsqueeze(0)  # Random text input sequence
+    text_input = torch.randint(0, 50, (122,)).unsqueeze(0)  # Random text input sequence
     ref_audio = torch.randn(1, 80, 120)  # Random reference audio in mel-spectrogram format
     print("ttt")
     print(text_input.shape)

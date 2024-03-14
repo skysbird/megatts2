@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .mel_encoder import MelGenerator
+from mel_encoder import MelGenerator
 
 # 假设全局编码器(GE)是一个简单的全连接层
 import torch
@@ -43,21 +43,51 @@ class GlobalEncoder(nn.Module):
 # print(timbre_features.shape)  # Expected output shape: [batch_size, hidden_size]
 
 
+def create_alignment(base_mat, duration_tokens):
+    N, L = duration_tokens.shape
+    for i in range(N):
+        count = 0
+        for j in range(L):
+            for k in range(duration_tokens[i][j]):
+                base_mat[i][count+k][j] = 1
+            count = count + duration_tokens[i][j]
+    return base_mat
+
 # Length Regulator 调整序列长度
 class LengthRegulator(nn.Module):
+    """ Length Regulator from FastSpeech """
+
     def __init__(self):
         super(LengthRegulator, self).__init__()
-        # Length regulator的具体实现取决于具体应用，这里我们使用一个简单的例子
 
-    def forward(self, x, target_length):
-        # 简单重复序列来匹配目标长度
-        print(target_length)
+        # assert (mel_frames / sample_rate * 1000 / duration_token_ms) == 1
+
+    def forward(
+        self,
+        x: torch.Tensor,  # (B, T, D)
+        duration_tokens: torch.Tensor,  # (B, T) int for duration
+        mel_max_length=None
+    ):
+
+        bsz, input_len, _ = x.size()
+
+        expand_max_len = torch.max(torch.sum(duration_tokens, -1), -1)[0].int()
+
+        alignment = torch.zeros(bsz, expand_max_len, input_len).numpy()
+        alignment = create_alignment(alignment, duration_tokens.cpu().numpy())
+        alignment = torch.from_numpy(alignment).to(x.device)
+        print(alignment)
+        print(alignment.shape)
         print(x.shape)
-        return x.repeat_interleave(target_length, dim=0)  # [B, T*target_length, D]
-
+        output = alignment @ x
+        if mel_max_length:
+            output = F.pad(
+                output, (0, 0, 0, mel_max_length-output.size(1), 0, 0))
+        return output
+    
 # 定义一个MRTE，这里我们假设Mel Encoder输出和Multi-Head Attention的结构和维度
 class MRTE(nn.Module):
-    def __init__(self, phone_dim, mel_dim, global_mel_dim, hidden_size, n_heads):
+    def __init__(self, mel_dim, global_mel_dim, hidden_size, n_heads):
         super(MRTE, self).__init__()
 
         self.mel_conv = nn.Conv1d(in_channels=mel_dim, out_channels=hidden_size, kernel_size=3, padding=1)
@@ -100,11 +130,12 @@ class MRTE(nn.Module):
 
         combined_output = combined_output.permute(1,0,2)
         print(combined_output.shape)
+        print(f"MRTE combined_output shape: {combined_output.shape}")  
 
         #TODO c
         regulated_output = self.length_regulator(combined_output, target_length)  # [ T*target_length, B,mel_dim]
 
-        return combined_output
+        return regulated_output
 
 if __name__=='__main__':
     # Example usage
@@ -114,14 +145,19 @@ if __name__=='__main__':
     hidden_size = 512
     mrte = MRTE(mel_dim=mel_dim,global_mel_dim=global_mel_dim,hidden_size=hidden_size, n_heads=2)
     # Create a batch of test Mel spectrograms (batch_size, channels, time)
-    test_mels = torch.randn(4, mel_dim, 120)  # Example with 4 items in a batch and 120 time-steps
-
+    test_mels = torch.randn(4, mel_dim, 120)  #  B D T Example with 4 items in a batch and 120 time-steps
+    # print(test_mels.shape)
     # Assume the target length for each item after the length regulator is fixed at 100 for this test
-    regulated_lengths = torch.full((4,), 100, dtype=torch.long)  # Example target lengths
+    # regulated_lengths = torch.full((4,), 100, dtype=torch.long)  # Example target lengths
 
+    duration_length = [[1,2,3,4]] * 4
+    duration_tokens = torch.tensor(duration_length).to(
+        dtype=torch.int32)
+    print(duration_tokens.shape)
     # print(regulated_lengths.shape)
     # Forward pass through the MRTE module
-    mrte_output = mrte(test_mels, test_mels, regulated_lengths)
+    phone = torch.rand(4,100,512) #B T D
+    mrte_output = mrte(phone,test_mels, test_mels, duration_tokens)
 
     print(f"MRTE output shape: {mrte_output.shape}")  # Expected shape: (target_length, batch_size, hidden_size)
     # print(mrte_output)

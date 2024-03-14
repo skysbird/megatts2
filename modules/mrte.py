@@ -178,7 +178,7 @@ class MRTE(nn.Module):
             mel: torch.Tensor,  # (B, T, mel_bins)
     ):
         tc_latent = self.tc_latent(phone,  mel)
-        print(tc_latent.shape)
+        print(f"tc_latent:{tc_latent.shape}")
         out = self.length_regulator(tc_latent, duration_tokens)
         return out
 
@@ -205,7 +205,10 @@ def test():
     )
     # mrte = mrte.to('cuda')
 
-    duration_tokens = torch.tensor([[1, 2, 3, 4], [1, 1, 1, 2]]).to(
+    duration_length = torch.randint(0, 50, (4,)).numpy() # Random text input sequence
+    print(duration_length)
+    duration_length = [1,2,3,4]
+    duration_tokens = torch.tensor([duration_length,duration_length]).to(
         dtype=torch.int32)
     # .to('cuda')
 
@@ -214,6 +217,7 @@ def test():
     m = torch.randn(2, 347, HIFIGAN_MEL_CHANNELS)#.to('cuda')
 
     out = mrte(duration_tokens, t, tl, m)
+    print(duration_tokens.shape)
     print(out.shape)
 
 test()
