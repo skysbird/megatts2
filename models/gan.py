@@ -21,7 +21,7 @@ class VQGANTTS(nn.Module):
     def __init__(self):
         super(VQGANTTS, self).__init__()
         self.content_encoder = ContentEncoder()
-        self.mrte = MRTE(512, 80,80,512,2)
+        self.mrte = MRTE( 80,80,512,2)
         self.vq_prosody_encoder = VQProsodyEncoder()
         self.mel_decoder = MelDecoder(first_channel=512 + 512) #vq and mrte dim
         self.plm = PLMModel()
@@ -35,10 +35,13 @@ class VQGANTTS(nn.Module):
         # MRTE Encoder forward pass
         #TODO 
         # Assume the target length for each item after the length regulator is fixed at 100 for this test
-        regulated_lengths = torch.full((1,), 100, dtype=torch.long)  # Example target lengths
+        # regulated_lengths = torch.full((1,), 100, dtype=torch.long)  # Example target lengths
 
+        duration_length = [[120]] * 1
+        duration_tokens = torch.tensor(duration_length).to(
+            dtype=torch.int32)
         # Forward pass through the MRTE module
-        mrte_features = self.mrte(content_features, ref_audio, ref_audio, regulated_lengths)
+        mrte_features = self.mrte(content_features, ref_audio, ref_audio, duration_tokens)
 
         # VQ Prosody Encoder forward pass
         print(ref_audio.shape)
@@ -50,8 +53,8 @@ class VQGANTTS(nn.Module):
         #TODO 直接扩展一下，要不然cat不了
         prosody_features = prosody_features.permute(0,2,1)
         print(prosody_features.shape)
-        prosody_features = prosody_features.repeat_interleave(2,dim=1)
-        print(prosody_features.shape)
+        # prosody_features = prosody_features.repeat_interleave(2,dim=1)
+        # print(prosody_features.shape)
 
         x = torch.cat([mrte_features,prosody_features],dim=-1)
 

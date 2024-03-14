@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mel_encoder import MelGenerator
+from .mel_encoder import MelGenerator
 
 # 假设全局编码器(GE)是一个简单的全连接层
 import torch
