@@ -35,7 +35,7 @@ trainer:
   devices: [0]
 model:
   G:
-    class_path: models.gan import VQGANTTS
+    class_path: models.gan.VQGANTTS
   D:
     class_path: modules.dscrm.Discriminator
     init_args:
