@@ -8,12 +8,26 @@ if __name__ == '__main__':
         plm_config='configs/config_plm.yaml',
         adm_ckpt='adm.ckpt',
         adm_config='configs/config_adm.yaml',
-        symbol_table='/root/autodl-tmp/megatts2/data/ds/unique_text_tokens.k2symbols'
+        symbol_table='/data/sky/data/ds/unique_text_tokens.k2symbols'
     )
 
     megatts.eval()
 
+    # text = 'Also, a popular contrivance whereby'
+    text = 'is a good day is a good day is a good day is a good day is a good day is a good day'
+
     megatts(
-        '/root/autodl-tmp/megatts2/data/test',
-        '八百标兵奔北坡北坡炮兵并排跑炮兵怕把标兵碰标兵怕碰炮兵炮黑化黑灰化肥灰会挥发发灰黑讳为黑灰花会回飞',
+        '/data/sky/data/wavs/121/',
+        text
     )
+
+    # text = 'Also, a popular contrivance whereby'
+    # megatts(
+    #     '/data/sky/data/wavs/121/',
+    #     text
+    # )
+    
+    # megatts.forward2(
+    #    '/data/sky/data/wavs/121/',
+    #    'Painful to hear.'
+    # )

@@ -4,7 +4,7 @@ trainer:
   logger:
     class_path: lightning.pytorch.loggers.tensorboard.TensorBoardLogger
     init_args:
-      save_dir: /content/logs/
+      save_dir: logs/
   callbacks:
     - class_path: lightning.pytorch.callbacks.ModelSummary
       init_args:
@@ -12,7 +12,7 @@ trainer:
     - class_path: lightning.pytorch.callbacks.ModelCheckpoint
       init_args:
         monitor: val/loss_re
-        filename: /content/nikatts_ar_checkpoint_{epoch}_{step}_{val/loss_re:.4f}
+        filename: gan_ar_checkpoint_{epoch}_{step}
         save_top_k: 5
         save_last: true
         every_n_epochs: 1
@@ -25,7 +25,7 @@ trainer:
   # limit_val_batches: 100
   accelerator: gpu
   log_every_n_steps: 100
-  val_check_interval: 1500
+  # val_check_interval: 20
   check_val_every_n_epoch: 1
 
   # strategy: ddp
@@ -53,7 +53,7 @@ model:
           content_n_layers: 8
           hidden_size: 512
           duration_token_ms: 16.0
-          phone_vocab_size: 320
+          phone_vocab_size: 61
           dropout: 0.1
           sample_rate: 16000
       vqpe:
@@ -93,14 +93,14 @@ model:
   G_commit_loss_coeff: 0.15
   G_vq_loss_coeff: 0.05
   G_adv_loss_coeff: 1.0
-  train_dtype: bfloat16
+  train_dtype: float32
   class_path: models.trainer.MegaGANTrainer
 data:
-  ds_path: /root/autodl-tmp/megatts2/data/ds/
+  ds_path: /data/sky/data/ds/
   max_duration_batch: 60
   min_duration: 2.1
   max_duration: 20
-  num_buckets: 10
+  num_buckets: 2
   num_workers: 4
   class_path: modules.datamodule.TTSDataModule
 ckpt_path: null

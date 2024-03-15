@@ -12,7 +12,7 @@ trainer:
     - class_path: lightning.pytorch.callbacks.ModelCheckpoint
       init_args:
         monitor: val/loss
-        filename: nikatts_ar_checkpoint_{epoch}_{step}_{val/loss:.4f}
+        filename: plm_checkpoint_{epoch}_{step}_{val/loss:.4f}
         save_top_k: 5
         save_last: true
         every_n_epochs: 1
@@ -24,7 +24,7 @@ trainer:
   # limit_val_batches: 100
   accelerator: gpu
   log_every_n_steps: 100
-  val_check_interval: 5000
+  #val_check_interval: 5000
   check_val_every_n_epoch: 1
 
   # strategy: ddp
@@ -44,13 +44,13 @@ model:
       dropout: 0.1
   initial_learning_rate: 1e-4
   warmup_steps: 200.0
-  train_dtype: bfloat16
+  train_dtype: float32
   class_path: models.trainer.MegaPLMTrainer
 data:
-  ds_path: /root/autodl-tmp/megatts2/data/ds/
+  ds_path: /data/sky/data/ds/
   dataset: MegaPLMDataset
   min_duration: 2.1
-  max_duration: 20
+  max_duration: 10
   num_workers: 4
   max_n_cuts: 15
   class_path: modules.datamodule.TTSDataModule

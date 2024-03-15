@@ -118,13 +118,13 @@ class DatasetMaker:
             if intervals[-1][2] == '':
                 intervals = intervals[:-1]
             if self.args.trim_wav:
-                start = intervals[0][0]*sr
-                stop = intervals[-1][1]*sr
-                y = y[int(start):int(stop)]
-                y = librosa.util.normalize(y)
+               start = intervals[0][0]*sr
+               stop = intervals[-1][1]*sr
+               y = y[int(start):int(stop)]
+               y = librosa.util.normalize(y)
 
-                sf.write(
-                    f'{self.args.wavtxt_path}/{speaker}/{id}.wav', y, HIFIGAN_SR)
+               sf.write(
+                   f'{self.args.wavtxt_path}/{speaker}/{id}.wav', y, HIFIGAN_SR)
 
             start = intervals[0][0]
             stop = intervals[-1][1]
@@ -161,7 +161,7 @@ class DatasetMaker:
                 start=0,
                 duration=recording.duration,
                 channel=0,
-                language="CN",
+                language="EN",
                 speaker=speaker,
                 text=text,
             )
@@ -181,6 +181,9 @@ class DatasetMaker:
             max_duration_token = max(max_duration_token, len(duration_tokens))
 
             assert len(duration_tokens) == len(phone_tokens)
+
+        print(recordings)
+        print(supervisions)
 
         for i in range(2):
             recording_set = RecordingSet.from_recordings(recordings[i])

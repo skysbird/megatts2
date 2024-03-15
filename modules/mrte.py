@@ -163,8 +163,11 @@ class MRTE(nn.Module):
         mel_context = self.mel_encoder(mel)
         mel_context = rearrange(mel_context, 'B D T -> B T D')
         phone_x = self.phone_encoder(phone_pos)
+        print("m1",phone_x)
+        
+        tc_latent = self.mha(phone_x, kv=mel_context,p=True)
+        print("2",tc_latent)
 
-        tc_latent = self.mha(phone_x, kv=mel_context)
         tc_latent = self.norm(tc_latent)
         tc_latent = self.activation(tc_latent)
 
@@ -177,7 +180,7 @@ class MRTE(nn.Module):
             phone_lens: torch.Tensor,  # (B,)
             mel: torch.Tensor,  # (B, T, mel_bins)
     ):
-        tc_latent = self.tc_latent(phone, phone_lens, mel)
+        tc_latent = self.tc_latent(phone, mel)
         
         out = self.length_regulator(tc_latent, duration_tokens)
         return out

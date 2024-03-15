@@ -41,7 +41,7 @@ def get_pinyin2lty():
 class TextTokenizer:
     def __init__(self) -> None:
 
-        self.separator = Separator(word="_", syllable="-", phone="|")
+        self.separator = Separator(word=" ", syllable="-", phone="|")
         self.pinyin2lty = get_pinyin2lty()
 
     def phonemize(self, text: str) -> str:

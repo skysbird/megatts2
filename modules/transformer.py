@@ -32,7 +32,7 @@ class MultiHeadAttention(nn.Module):
             nn.Dropout(dropout),
         )
 
-    def forward(self, q, kv=None, mask=None):
+    def forward(self, q, kv=None, mask=None,p=None):
 
         bsz, tgt_len, _ = q.size()
         src_len = kv.size(1) if kv is not None else tgt_len
@@ -52,9 +52,17 @@ class MultiHeadAttention(nn.Module):
         att = F.scaled_dot_product_attention(
             q, k, v, mask, self.dropout if self.training else 0.0, False)
 
+        
         att = att.transpose(1, 2).contiguous().view(bsz, tgt_len, self.qkv_dim)
-
-        return self.out_proj(att)
+        if p:
+            print("q",q)
+            print("k",k)
+            print("v",v)
+            print("att",att)
+        out = self.out_proj(att)
+        if p:
+            print("out",out)
+        return out
 
 class TransformerEncoderLayer(nn.Module):
     def __init__(self, dim, ff_dim, conv_ff=False, n_heads=8, dropout=0.):
