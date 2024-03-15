@@ -9,9 +9,7 @@ from new_modules.mel_decoder import MelDecoder
 from plm import PLMModel
 from adm import ADM
 
-class ADM(nn.Module):
-    # Placeholder for the actual Auto-Regressive Duration Model implementation
-    pass
+
 
 class GANDiscriminator(nn.Module):
     # Placeholder for the actual GAN Discriminator implementation
@@ -26,33 +24,22 @@ class VQGANTTS(nn.Module):
         self.mel_decoder = MelDecoder(first_channel=512 + 512) #vq and mrte dim
         self.plm = PLMModel()
         self.adm = ADM()
-        self.gan_discriminator = GANDiscriminator()
+        # self.gan_discriminator = GANDiscriminator()
     
-    def forward(self, duration_tokens, text, ref_audio):
+    def forward(self, duration_tokens, text, ref_audio, ref_audios):
         # Content Encoder forward pass
         content_features = self.content_encoder(text)
         print(content_features.shape)
-        # MRTE Encoder forward pass
-        #TODO 
-        # Assume the target length for each item after the length regulator is fixed at 100 for this test
-        # regulated_lengths = torch.full((1,), 100, dtype=torch.long)  # Example target lengths
-
+        
         # Forward pass through the MRTE module
-        mrte_features = self.mrte(content_features, ref_audio, ref_audio, duration_tokens)
+        mrte_features = self.mrte(content_features, ref_audio, ref_audios, duration_tokens)
 
         # VQ Prosody Encoder forward pass
-        print(ref_audio.shape)
+        # XXX ? need check
         loss,prosody_features,perp = self.vq_prosody_encoder(ref_audio)
 
-        print("xxxxx")
         # Mel Decoder forward pass
-        print(mrte_features.shape)
-        #TODO 直接扩展一下，要不然cat不了
         prosody_features = prosody_features.permute(0,2,1)
-        print(prosody_features.shape)
-        # prosody_features = prosody_features.repeat_interleave(2,dim=1)
-        # print(prosody_features.shape)
-
         x = torch.cat([mrte_features,prosody_features],dim=-1)
 
         x = x.permute(0,2,1)
@@ -82,6 +69,9 @@ class VQGANTTS(nn.Module):
 if __name__=='__main__':    # Example of usage
     text_input = torch.randint(0, 50, (122,)).unsqueeze(0)  # Random text input sequence
     ref_audio = torch.randn(1, 80, 120)  # Random reference audio in mel-spectrogram format
+
+    ref_audios = torch.randn(1, 80, 666)  # Random reference audio in mel-spectrogram format
+
     print("ttt")
     print(text_input.shape)
     # Create the VQ-GAN TTS model
@@ -92,7 +82,7 @@ if __name__=='__main__':    # Example of usage
             dtype=torch.int32)
 
     # Perform a forward pass through the model
-    tts_output,loss = vq_gan_tts_model(duration_tokens, text_input, ref_audio)
+    tts_output,loss = vq_gan_tts_model(duration_tokens, text_input, ref_audio, ref_audios)
 
     # Discriminator step (for training the GAN)
     # discriminated_output = vq_gan_tts_model.discriminate(tts_output)
