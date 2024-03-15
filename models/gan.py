@@ -31,6 +31,11 @@ class VQGANTTS(nn.Module):
         content_features = self.content_encoder(text)
         print(content_features.shape)
         
+        # mel = rearrange(mel, 'B T D -> B D T')
+
+        ref_audio = ref_audio.permute(0,2,1)
+        ref_audios = ref_audios.permute(0,2,1)
+        
         # Forward pass through the MRTE module
         mrte_features = self.mrte(content_features, ref_audio, ref_audios, duration_tokens)
 
