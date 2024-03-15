@@ -143,7 +143,7 @@ class MegaGANTrainer(pl.LightningModule):
         y = batch["mel_targets"]
         with torch.no_grad():
             self.G.eval()
-            y_hat, _, _ = self(batch)
+            y_hat, _ = self(batch)
 
         loss_re = F.l1_loss(y, y_hat)
 
