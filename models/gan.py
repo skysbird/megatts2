@@ -6,6 +6,11 @@ from new_modules.content_encoder import ContentEncoder
 from new_modules.mrte import MRTE
 from new_modules.vq_prosody_encoder import VQProsodyEncoder
 from new_modules.mel_decoder import MelDecoder
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent))
+
+
 from plm import PLMModel
 from adm import ADM
 
