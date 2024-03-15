@@ -26,7 +26,7 @@ class VQGANTTS(nn.Module):
         self.content_encoder = ContentEncoder()
         self.mrte = MRTE( 80,80,512,2)
         self.vq_prosody_encoder = VQProsodyEncoder()
-        self.mel_decoder = MelDecoder(first_channel=512 + 512) #vq and mrte dim
+        self.mel_decoder = MelDecoder(first_channel=512 + 512, last_channel = 80) #vq and mrte dim
         self.plm = PLMModel()
         self.adm = ADM()
         # self.gan_discriminator = GANDiscriminator()
