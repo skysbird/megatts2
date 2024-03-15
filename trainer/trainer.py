@@ -75,12 +75,14 @@ class MegaGANTrainer(pl.LightningModule):
         )
 
     def forward(self, batch: dict):
+        # forward(self, duration_tokens, text, ref_audio, ref_audios):
+
         y_hat, commit_loss, vq_loss = self.G(
             duration_tokens=batch["duration_tokens"],
-            phone=batch["phone_tokens"],
-            phone_lens=batch["tokens_lens"],
-            mel_mrte=batch["mel_timbres"],
-            mel_vqpe=batch["mel_targets"]
+            text=batch["phone_tokens"],
+            # phone_lens=batch["tokens_lens"],
+            ref_audio=batch["mel_timbres"],
+            ref_audios=batch["mel_targets"]
         )
 
         return y_hat, commit_loss, vq_loss
