@@ -81,8 +81,8 @@ class MegaGANTrainer(pl.LightningModule):
             duration_tokens=batch["duration_tokens"],
             text=batch["phone_tokens"],
             # phone_lens=batch["tokens_lens"],
-            ref_audio=batch["mel_timbres"],
-            ref_audios=batch["mel_targets"]
+            ref_audio=batch["mel_targets"],
+            ref_audios=batch["mel_timbres"]
         )
 
         return y_hat, commit_loss, vq_loss

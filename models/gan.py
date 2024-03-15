@@ -40,7 +40,7 @@ class VQGANTTS(nn.Module):
 
         ref_audio = ref_audio.permute(0,2,1)
         ref_audios = ref_audios.permute(0,2,1)
-        
+
         # Forward pass through the MRTE module
         mrte_features = self.mrte(content_features, ref_audio, ref_audios, duration_tokens)
 
@@ -78,9 +78,9 @@ class VQGANTTS(nn.Module):
 
 if __name__=='__main__':    # Example of usage
     text_input = torch.randint(0, 50, (122,)).unsqueeze(0)  # Random text input sequence
-    ref_audio = torch.randn(1, 80, 120)  # Random reference audio in mel-spectrogram format
+    ref_audio = torch.randn(1, 120, 80)  # Random reference audio in mel-spectrogram format
 
-    ref_audios = torch.randn(1, 80, 666)  # Random reference audio in mel-spectrogram format
+    ref_audios = torch.randn(1,666,80)  # Random reference audio in mel-spectrogram format
 
     print("ttt")
     print(text_input.shape)
