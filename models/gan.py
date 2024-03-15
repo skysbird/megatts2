@@ -28,7 +28,7 @@ class VQGANTTS(nn.Module):
         self.adm = ADM()
         self.gan_discriminator = GANDiscriminator()
     
-    def forward(self, text, ref_audio):
+    def forward(self, duration_tokens, text, ref_audio):
         # Content Encoder forward pass
         content_features = self.content_encoder(text)
         print(content_features.shape)
@@ -37,9 +37,6 @@ class VQGANTTS(nn.Module):
         # Assume the target length for each item after the length regulator is fixed at 100 for this test
         # regulated_lengths = torch.full((1,), 100, dtype=torch.long)  # Example target lengths
 
-        duration_length = [[120]] * 1
-        duration_tokens = torch.tensor(duration_length).to(
-            dtype=torch.int32)
         # Forward pass through the MRTE module
         mrte_features = self.mrte(content_features, ref_audio, ref_audio, duration_tokens)
 
@@ -90,8 +87,12 @@ if __name__=='__main__':    # Example of usage
     # Create the VQ-GAN TTS model
     vq_gan_tts_model = VQGANTTS()
 
+    duration_length = [[120]] * 1
+    duration_tokens = torch.tensor(duration_length).to(
+            dtype=torch.int32)
+
     # Perform a forward pass through the model
-    tts_output,loss = vq_gan_tts_model(text_input, ref_audio)
+    tts_output,loss = vq_gan_tts_model(duration_tokens, text_input, ref_audio)
 
     # Discriminator step (for training the GAN)
     # discriminated_output = vq_gan_tts_model.discriminate(tts_output)
