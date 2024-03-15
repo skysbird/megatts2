@@ -199,28 +199,28 @@ def test():
     mrte = MRTE(
         mel_bins = HIFIGAN_MEL_CHANNELS,
         mel_frames = HIFIGAN_HOP_LENGTH,
-        ff_dim = 1024,
-        n_heads = 2,
-        n_layers = 8,
         hidden_size = 512,
-        activation = 'ReLU',
-        kernel_size = 3,
-        stride = 16,
-        n_stacks = 5,
-        n_blocks = 2,
         duration_token_ms = (
             HIFIGAN_HOP_LENGTH / HIFIGAN_SR * 1000),
         phone_vocab_size = 320,
         dropout = 0.1,
         sample_rate = HIFIGAN_SR,
     )
-    mrte = mrte.to('cuda')
+    # mrte = mrte.to('cuda')
 
-    duration_tokens = torch.tensor([[1, 2, 3, 4], [1, 1, 1, 2]]).to(
-        dtype=torch.int32).to('cuda')
+    duration_length = torch.randint(0, 50, (4,)).numpy() # Random text input sequence
+    print(duration_length)
+    duration_length = [1,2,3,4]
+    duration_tokens = torch.tensor([duration_length,duration_length]).to(
+        dtype=torch.int32)
+    # .to('cuda')
 
-    t = torch.randint(0, 320, (2, 10)).to(dtype=torch.int64).to('cuda')
-    tl = torch.tensor([6, 10]).to(dtype=torch.int64).to('cuda')
-    m = torch.randn(2, 347, HIFIGAN_MEL_CHANNELS).to('cuda')
+    t = torch.randint(0, 320, (2, 10)).to(dtype=torch.int64)#.to('cuda')
+    tl = torch.tensor([6, 10]).to(dtype=torch.int64)#.to('cuda')
+    m = torch.randn(2, 347, HIFIGAN_MEL_CHANNELS)#.to('cuda')
 
     out = mrte(duration_tokens, t, tl, m)
+    print(duration_tokens.shape)
+    print(out.shape)
+
+test()
