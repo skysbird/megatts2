@@ -54,7 +54,8 @@ class VQGANTTS(nn.Module):
 
         x = x.permute(0,2,1)
         mel_output = self.mel_decoder(x)
-
+        mel_output = mel_output.permute(0,2,1)
+        
         # #TODO
         # sequence_length, batch_size, d_model = 100, 2, 2048
         # # src = torch.rand(sequence_length, batch_size, d_model)
