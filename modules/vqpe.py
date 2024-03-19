@@ -68,4 +68,4 @@ def test():
 
     print(zq.shape, commit_loss.shape, vq_loss.shape,codes.shape)
 
-test()
+# test()
