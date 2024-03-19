@@ -34,7 +34,7 @@ class VQGANTTS(nn.Module):
     def forward(self, duration_tokens, text, ref_audio, ref_audios):
         # Content Encoder forward pass
         content_features = self.content_encoder(text)
-        print(content_features.shape)
+        # print(content_features.shape)
         
         # mel = rearrange(mel, 'B T D -> B D T')
 
@@ -83,8 +83,8 @@ if __name__=='__main__':    # Example of usage
 
     ref_audios = torch.randn(1,666,80)  # Random reference audio in mel-spectrogram format
 
-    print("ttt")
-    print(text_input.shape)
+    # print("ttt")
+    # print(text_input.shape)
     # Create the VQ-GAN TTS model
     vq_gan_tts_model = VQGANTTS()
 
@@ -98,7 +98,7 @@ if __name__=='__main__':    # Example of usage
     # Discriminator step (for training the GAN)
     # discriminated_output = vq_gan_tts_model.discriminate(tts_output)
 
-    print(tts_output.shape)  # Output from the TTS model
-    print(loss)
+    # print(tts_output.shape)  # Output from the TTS model
+    # print(loss)
     # print(discriminated_output.shape)  # Output from the Discriminator
 
