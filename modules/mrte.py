@@ -223,4 +223,4 @@ def test():
     print(duration_tokens.shape)
     print(out.shape)
 
-test()
+# test()

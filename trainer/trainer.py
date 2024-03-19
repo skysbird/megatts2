@@ -145,8 +145,8 @@ class MegaGANTrainer(pl.LightningModule):
             self.G.eval()
             y_hat, _ = self(batch)
 
-        print(y.shape)
-        print(y_hat.shape)
+        # print(y.shape)
+        # print(y_hat.shape)
         loss_re = F.l1_loss(y, y_hat)
 
         self.validation_step_outputs.append({
