@@ -76,9 +76,9 @@ class LengthRegulator(nn.Module):
         alignment = torch.zeros(bsz, expand_max_len, input_len).numpy()
         alignment = create_alignment(alignment, duration_tokens.cpu().numpy())
         alignment = torch.from_numpy(alignment).to(x.device)
-        print(alignment)
-        print(alignment.shape)
-        print(x.shape)
+        # print(alignment)
+        # print(alignment.shape)
+        # print(x.shape)
         output = alignment @ x
         if mel_max_length:
             output = F.pad(
