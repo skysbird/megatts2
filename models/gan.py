@@ -27,8 +27,10 @@ class VQGANTTS(nn.Module):
         self.mrte = MRTE( 80,80,512,2)
         self.vq_prosody_encoder = VQProsodyEncoder()
         self.mel_decoder = MelDecoder(first_channel=512 + 512, last_channel = 80) #vq and mrte dim
-        self.plm = PLMModel()
-        self.adm = ADM()
+        
+        #模型太大，暂时不用这俩
+        #self.plm = PLMModel()
+        #self.adm = ADM()
         # self.gan_discriminator = GANDiscriminator()
     
     def forward(self, duration_tokens, text, ref_audio, ref_audios):
