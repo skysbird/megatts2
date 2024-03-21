@@ -36,6 +36,39 @@ trainer:
 model:
   G:
     class_path: models.gan.VQGANTTS
+    init_args:
+      content_encoder:
+        class_path: new_modules.content_encoder.ContentEncoder
+        init_args:
+          d_model: 512
+          nhead: 2
+          num_encoder_layers: 8
+          dim_feedforward: 1024
+          dropout: 0.1
+          kernel_size: 5
+          vocab_size: 320
+      mrte:
+        class_path: new_modules.mrte.MRTE
+        init_args:
+          mel_dim: 80
+          global_mel_dim: 80
+          hidden_size: 512
+          n_heads: 2
+      vqpe:
+        class_path: new_modules.vq_prosody_encoder.VQProsodyEncoder
+        init_args:
+          hidden_size: 512
+          conv_kernel_size: 5
+          num_vq_embeddings: 2048
+          vq_embedding_dim: 256
+      mel_decoder:
+        class_path: new_modules.mel_decoder.MelDecoder
+        init_args:
+          first_channel: 1024 # 512 + 512
+          last_channel: 80
+          num_layers: 5
+          hidden_size: 512
+          kernel_size: 5
   D:
     class_path: modules.dscrm.Discriminator
     init_args:

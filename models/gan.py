@@ -21,12 +21,17 @@ class GANDiscriminator(nn.Module):
     pass
 
 class VQGANTTS(nn.Module):
-    def __init__(self):
+    def __init__(self,
+                 content_encoder: ContentEncoder,
+                 mrte:MRTE,
+                 vqpe: VQProsodyEncoder,
+                 mel_decoder: MelDecoder
+    ):
         super(VQGANTTS, self).__init__()
-        self.content_encoder = ContentEncoder()
-        self.mrte = MRTE( 80,80,512,2)
-        self.vq_prosody_encoder = VQProsodyEncoder()
-        self.mel_decoder = MelDecoder(first_channel=512 + 512, last_channel = 80) #vq and mrte dim
+        self.content_encoder = content_encoder # ContentEncoder()
+        self.mrte = mrte  # MRTE( 80,80,512,2)
+        self.vq_prosody_encoder = vqpe # VQProsodyEncoder()
+        self.mel_decoder = mel_decoder # MelDecoder(first_channel=512 + 512, last_channel = 80) #vq and mrte dim
         
         #模型太大，暂时不用这俩
         #self.plm = PLMModel()
