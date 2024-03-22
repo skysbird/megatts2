@@ -13,6 +13,7 @@ sys.path.append(str(Path(__file__).parent))
 
 from plm import PLMModel
 from adm import ADM
+from modules.convnet import ConvNet
 
 
 
@@ -25,7 +26,7 @@ class VQGANTTS(nn.Module):
                  content_encoder: ContentEncoder,
                  mrte:MRTE,
                  vqpe: VQProsodyEncoder,
-                 mel_decoder: MelDecoder
+                 mel_decoder: ConvNet
     ):
         super(VQGANTTS, self).__init__()
         self.content_encoder = content_encoder # ContentEncoder()
