@@ -136,11 +136,11 @@ class MegaGANTrainer(pl.LightningModule):
             # self.log("train/G_loss_vq", G_loss_vq)
             self.log("train/G_loss_re", G_loss_re)
 
-            self.train_step_outputs.append({
-                "y": y[0],
-                "y_hat": y_hat[0],
-                "loss_re": G_loss_re,
-            })
+        self.train_step_outputs.append({
+            "y": y[0],
+            "y_hat": y_hat[0],
+            "loss_re": G_loss_re,
+        })
 
 
     def on_train_epoch_end(self):
