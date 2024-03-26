@@ -246,12 +246,12 @@ class MegaGANTrainer(pl.LightningModule):
                 sample_rate=HIFIGAN_SR,
             )
 
-        loss_re = torch.mean(torch.stack(
-            [x["loss_re"] for x in outputs]))
+            loss_re = torch.mean(torch.stack(
+                [x["loss_re"] for x in outputs]))
 
-        self.log("train/loss_re", loss_re, sync_dist=True)
+            self.log("train/loss_re", loss_re, sync_dist=True)
 
-        self.train_step_outputs = []
+            self.train_step_outputs = []
         
 
 
