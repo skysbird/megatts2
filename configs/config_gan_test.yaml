@@ -26,13 +26,13 @@ trainer:
   accelerator: gpu
   log_every_n_steps: 100
   # val_check_interval: 20
-  check_val_every_n_epoch: 1000
+  check_val_every_n_epoch: 10
 
   # strategy: ddp
   # devices: [0, 1]
   # use_distributed_sampler: false
 
-  devices: [0]
+  devices: [1]
 model:
   G:
     class_path: models.gan.VQGANTTS
@@ -98,7 +98,7 @@ data:
   max_duration_batch: 60
   min_duration: 2.1
   max_duration: 20
-  num_buckets: 2
+  num_buckets: 10
   num_workers: 4
   class_path: modules.datamodule.TTSDataModule
 ckpt_path: null
