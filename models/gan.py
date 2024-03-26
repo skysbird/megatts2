@@ -61,7 +61,10 @@ class VQGANTTS(nn.Module):
         prosody_features,loss, _, _ = self.vq_prosody_encoder(ref_audio)
 
         # Mel Decoder forward pass
-        prosody_features = prosody_features.permute(0,2,1)
+        #prosody_features = prosody_features.permute(0,2,1)
+        print(mrte_features.shape)
+        print(prosody_features.shape)
+
         x = torch.cat([mrte_features,prosody_features],dim=-1)
 
         x = x.permute(0,2,1)
