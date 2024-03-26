@@ -136,11 +136,11 @@ class MegaGANTrainer(pl.LightningModule):
             # self.log("train/G_loss_vq", G_loss_vq)
             self.log("train/G_loss_re", G_loss_re)
 
-        self.train_step_outputs.append({
-            "y": y[0],
-            "y_hat": y_hat[0],
-            "loss_re": G_loss_re,
-        })
+        # self.train_step_outputs.append({
+        #     "y": y[0],
+        #     "y_hat": y_hat[0],
+        #     "loss_re": G_loss_re,
+        # })
 
 
     def on_train_epoch_end(self):
@@ -211,47 +211,47 @@ class MegaGANTrainer(pl.LightningModule):
         self.validation_step_outputs = []
 
         #存一下train的
-        outputs = self.train_step_outputs
-        if outputs and self.global_rank == 0:
+        # outputs = self.train_step_outputs
+        # if outputs and self.global_rank == 0:
 
-            mel = outputs[-1]["y"].transpose(0, 1)
-            mel_hat = outputs[-1]["y_hat"].transpose(0, 1)
+        #     mel = outputs[-1]["y"].transpose(0, 1)
+        #     mel_hat = outputs[-1]["y_hat"].transpose(0, 1)
 
-            self.logger.experiment.add_image(
-                "train/mel_analyse",
-                plot_spectrogram_to_numpy(
-                    mel.data.cpu().numpy(), mel_hat.data.cpu().numpy()),
-                self.global_step,
-                dataformats="HWC",
-            )
+        #     self.logger.experiment.add_image(
+        #         "train/mel_analyse",
+        #         plot_spectrogram_to_numpy(
+        #             mel.data.cpu().numpy(), mel_hat.data.cpu().numpy()),
+        #         self.global_step,
+        #         dataformats="HWC",
+        #     )
 
-            with torch.no_grad():
-                hifi_gan = HIFIGAN.from_hparams(source="speechbrain/tts-hifigan-libritts-16kHz")
-                hifi_gan.eval()
+        #     with torch.no_grad():
+        #         hifi_gan = HIFIGAN.from_hparams(source="speechbrain/tts-hifigan-libritts-16kHz")
+        #         hifi_gan.eval()
 
-                audio_target = hifi_gan.decode_batch(mel.unsqueeze(0).cpu())
-                audio_hat = hifi_gan.decode_batch(mel_hat.unsqueeze(0).cpu())
+        #         audio_target = hifi_gan.decode_batch(mel.unsqueeze(0).cpu())
+        #         audio_hat = hifi_gan.decode_batch(mel_hat.unsqueeze(0).cpu())
 
-            self.logger.experiment.add_audio(
-                "train/audio_target",
-                audio_target[0],
-                self.global_step,
-                sample_rate=HIFIGAN_SR,
-            )
+        #     self.logger.experiment.add_audio(
+        #         "train/audio_target",
+        #         audio_target[0],
+        #         self.global_step,
+        #         sample_rate=HIFIGAN_SR,
+        #     )
 
-            self.logger.experiment.add_audio(
-                "train/audio_hat",
-                audio_hat[0],
-                self.global_step,
-                sample_rate=HIFIGAN_SR,
-            )
+        #     self.logger.experiment.add_audio(
+        #         "train/audio_hat",
+        #         audio_hat[0],
+        #         self.global_step,
+        #         sample_rate=HIFIGAN_SR,
+        #     )
 
-            loss_re = torch.mean(torch.stack(
-                [x["loss_re"] for x in outputs]))
+        #     loss_re = torch.mean(torch.stack(
+        #         [x["loss_re"] for x in outputs]))
 
-            self.log("train/loss_re", loss_re, sync_dist=True)
+        #     self.log("train/loss_re", loss_re, sync_dist=True)
 
-            self.train_step_outputs = []
+        #     self.train_step_outputs = []
         
 
 
