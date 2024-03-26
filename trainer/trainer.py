@@ -212,7 +212,7 @@ class MegaGANTrainer(pl.LightningModule):
 
         #存一下train的
         outputs = self.train_step_outputs
-        if self.global_rank == 0:
+        if outputs and self.global_rank == 0:
 
             mel = outputs[0]["y"].transpose(0, 1)
             mel_hat = outputs[0]["y_hat"].transpose(0, 1)
