@@ -38,11 +38,11 @@ pip install -r requirements.txt
 
 ## Prepare dataset
 1. Prepare wav and txt files to ./data/wav 
-2. Run `python3 prepare_ds.py --stage 0 --num_workers 4 --wavtxt_path /content/data/wavs --text_grid_path /content/data/textgrids --ds_path /content/data/ds`
+2. Run `python3 prepare_ds.py --stage 0 --num_workers 4 --wavtxt_path /data/sky/data/wavs --text_grid_path /data/sky/data/textgrids --ds_path /data/sky/data/ds`
 3. mfa model download acoustic english_mfa
 mfa model download dictionary english_mfa
-4. mfa align /content/data/wavs english_mfa english_mfa /content/data/textgrids --clean -j 12 -t tmp
-5. Run `python3 prepare_ds.py --stage 1 --num_workers 4 --wavtxt_path /content/data/wavs --text_grid_path /content/data/textgrids --ds_path /content/data/ds` 
+4. mfa align /data/sky/data/wavs english_mfa english_mfa /data/sky/data/textgrids --clean -j 12 -t tmp
+5. Run `python3 prepare_ds.py --stage 1 --num_workers 4 --wavtxt_path /data/sky/data/wavs --text_grid_path /data/sky/data/textgrids --ds_path /data/sky/data/ds` 
 6. Run `python3 prepare_ds.py --stage 2 --generator_config configs/config_gan.yaml --generator_ckpt generator.ckpt` after training generator.
 
 ## Train
