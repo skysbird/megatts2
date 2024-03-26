@@ -214,8 +214,8 @@ class MegaGANTrainer(pl.LightningModule):
         outputs = self.train_step_outputs
         if outputs and self.global_rank == 0:
 
-            mel = outputs[0]["y"].transpose(0, 1)
-            mel_hat = outputs[0]["y_hat"].transpose(0, 1)
+            mel = outputs[-1]["y"].transpose(0, 1)
+            mel_hat = outputs[-1]["y_hat"].transpose(0, 1)
 
             self.logger.experiment.add_image(
                 "train/mel_analyse",
