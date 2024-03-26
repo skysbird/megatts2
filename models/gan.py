@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from new_modules.content_encoder import ContentEncoder
 from new_modules.mrte import MRTE
-from new_modules.vq_prosody_encoder import VQProsodyEncoder
+# from new_modules.vq_prosody_encoder import VQProsodyEncoder
 from new_modules.mel_decoder import MelDecoder
 import sys
 from pathlib import Path
@@ -14,6 +14,7 @@ sys.path.append(str(Path(__file__).parent))
 from plm import PLMModel
 from adm import ADM
 from modules.convnet import ConvNet
+from modules.vqpe import VQProsodyEncoder
 
 
 
@@ -54,7 +55,10 @@ class VQGANTTS(nn.Module):
 
         # VQ Prosody Encoder forward pass
         # XXX ? need check
-        loss,prosody_features,perp = self.vq_prosody_encoder(ref_audio)
+            # return zq, commit_loss, vq_loss, codes
+
+        # loss,prosody_features,perp = self.vq_prosody_encoder(ref_audio)
+        prosody_features,loss, _, _ = self.vq_prosody_encoder(ref_audio)
 
         # Mel Decoder forward pass
         prosody_features = prosody_features.permute(0,2,1)
