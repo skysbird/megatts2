@@ -136,6 +136,41 @@ class MRTE(nn.Module):
         regulated_output = self.length_regulator(combined_output, target_length)  # [ T*target_length, B,mel_dim]
 
         return regulated_output
+    
+    def tc_latent(self, phone, mel_spec, global_mel_spec):
+         # 先卷到目标维
+        mel_spec = self.mel_conv(mel_spec)
+        # print(mel_spec.shape)
+        # Mel Encoder
+        mel_encoded = self.mel_encoder(mel_spec)  # [B, T, mel_dim]
+        # print(mel_encoded.shape)
+
+        mel_encoded = mel_encoded.permute(2,0,1)
+        # Multi-Head Attention
+        # print("p")
+        # print(phone.shape)
+        # print(mel_encoded.shape)
+        phone = phone.permute(1,0,2)
+        attn_output, _ = self.multihead_attention(phone, mel_encoded, mel_encoded)  # [B, T, mel_dim]
+
+        # Global Encoder
+        global_features = self.global_encoder(global_mel_spec)  # [B, global_dim]
+        # global_features = global_features.unsqueeze(1).expand(-1, attn_output.size(1), -1)  # [B, T, global_dim]
+        # global_features = self.global_encoder(attn_output.mean(dim=0))
+
+        # Length Regulator
+        global_features = global_features.permute(2,0,1)
+        attn_output = attn_output.permute(0,1,2)
+        
+        # print(attn_output.shape)
+        # print(global_features.shape)
+        # 合并Attention输出和全局特征
+        combined_output = torch.cat((attn_output, global_features), dim=0)  # [B, T*target_length, mel_dim+global_dim]
+        # print(combined_output.shape)
+
+        combined_output = combined_output.permute(1,0,2)
+        return combined_output
+
 
 if __name__=='__main__':
     # Example usage

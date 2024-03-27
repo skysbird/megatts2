@@ -134,9 +134,9 @@ class TTSDataset(torch.utils.data.Dataset):
             "phone_tokens":  phone_tokens,
             "duration_tokens": duration_tokens,
             "tokens_lens": tokens_lens,
-            "mel_targets": mel_targets,
+            "mel_targets": mel_targets,  #
             "mel_target_lens": mel_target_lens,
-            "mel_timbres": mel_timbres,
+            "mel_timbres": mel_timbres, #相同说话人组合一起
         }
 
         return batch

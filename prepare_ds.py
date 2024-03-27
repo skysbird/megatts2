@@ -38,7 +38,9 @@ from modules.tokenizer import (
     MelSpecExtractor,
     AudioFeatExtraConfig
 )
-from models.megatts2 import MegaG
+# from models.megatts2 import MegaG
+from models.gan import VQGANTTS
+
 from modules.datamodule import TTSDataset, make_spk_cutset
 
 from utils.symbol_table import SymbolTable
@@ -228,7 +230,8 @@ class DatasetMaker:
 
         os.system(f'mkdir -p {self.args.ds_path}/latents')
 
-        G = MegaG.from_pretrained(dm.args.generator_ckpt, dm.args.generator_config)
+        G = VQGANTTS.from_pretrained(dm.args.generator_ckpt, dm.args.generator_config)
+        # G = MegaG.from_pretrained(dm.args.generator_ckpt, dm.args.generator_config)
         G = G.cuda()
         G.eval()
 
@@ -251,8 +254,8 @@ class DatasetMaker:
                 tc_latent, p_code = G.s2_latent(
                     batch['phone_tokens'].cuda(),
                     batch['tokens_lens'].cuda(),
+                    batch['mel_targets'].cuda(),
                     batch['mel_timbres'].cuda(),
-                    batch['mel_targets'].cuda()
                 )
 
                 s2_latent['tc_latent'] = tc_latent.cpu().numpy()

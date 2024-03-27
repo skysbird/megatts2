@@ -15,7 +15,8 @@ from plm import PLMModel
 from adm import ADM
 from modules.convnet import ConvNet
 from modules.vqpe import VQProsodyEncoder
-
+import yaml
+from utils.utils import instantiate_class
 
 
 class GANDiscriminator(nn.Module):
@@ -93,6 +94,46 @@ class VQGANTTS(nn.Module):
     def discriminate(self, mel):
         # GAN Discriminator forward pass
         return self.gan_discriminator(mel)
+    
+    def s2_latent(self,  text, ref_audio, ref_audios):
+        _, _, _, codes = self.vq_prosody_encoder(ref_audio)
+        content_features = self.content_encoder(text)
+        
+        x = self.mrte.tc_latent(content_features,  ref_audio, ref_audios)
+        return x, codes
+
+    @classmethod
+    def from_hparams(self, config_path: str) -> 'VQGANTTS':
+
+        with open(config_path, "r") as f:
+            config = yaml.safe_load(f)
+
+            G_config = init = config['model']['G']
+
+            mrte = instantiate_class(
+                args=(), init=G_config['init_args']['mrte'])
+            vqpe = instantiate_class(
+                args=(), init=G_config['init_args']['vqpe'])
+
+            G_config['init_args']['mrte'] = mrte
+            G_config['init_args']['vqpe'] = vqpe
+
+            G = instantiate_class(args=(), init=G_config)
+
+            return G
+        
+    @classmethod
+    def from_pretrained(self, ckpt: str, config: str) -> "VQGANTTS":
+
+        G = VQGANTTS.from_hparams(config)
+
+        state_dict = {}
+        for k, v in torch.load(ckpt)['state_dict'].items():
+            if k.startswith('G.'):
+                state_dict[k[2:]] = v
+
+        G.load_state_dict(state_dict, strict=True)
+        return G
 
 if __name__=='__main__':    # Example of usage
     text_input = torch.randint(0, 50, (122,)).unsqueeze(0)  # Random text input sequence

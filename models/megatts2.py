@@ -106,8 +106,8 @@ class MegaG(nn.Module):
             self,
             phone: torch.Tensor,  # (B, T)
             phone_lens: torch.Tensor,  # (B,)
-            mel_mrte: torch.Tensor,  # (B, T, mel_bins)
-            mel_vqpe: torch.Tensor,  # (B, T, mel_bins)
+            mel_mrte: torch.Tensor,  # (B, T, mel_bins) #多个说话人分组合并
+            mel_vqpe: torch.Tensor,  # (B, T, mel_bins) #target
     ):
         _, _, _, codes = self.vqpe(mel_vqpe)
         x = self.mrte.tc_latent(phone,  mel_mrte)
