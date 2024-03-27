@@ -25,7 +25,7 @@ trainer:
   # limit_val_batches: 100
   accelerator: gpu
   log_every_n_steps: 100
-  # val_check_interval: 20
+  val_check_interval: 2000
   check_val_every_n_epoch: 1
 
   # strategy: ddp
@@ -55,20 +55,28 @@ model:
           hidden_size: 512
           n_heads: 2
       vqpe:
-        class_path: new_modules.vq_prosody_encoder.VQProsodyEncoder
+        class_path: modules.vqpe.VQProsodyEncoder
         init_args:
-          hidden_size: 512
-          conv_kernel_size: 5
-          num_vq_embeddings: 2048
-          vq_embedding_dim: 256
-      mel_decoder:
-        class_path: new_modules.mel_decoder.MelDecoder
-        init_args:
-          first_channel: 1024 # 512 + 512
-          last_channel: 80
-          num_layers: 5
+          mel_bins: 20
+          stride: 8
           hidden_size: 512
           kernel_size: 5
+          n_layers: 3
+          n_stacks: 5
+          n_blocks: 2
+          vq_bins: 1024
+          vq_dim: 512
+          activation: ReLU
+      mel_decoder:
+        class_path: modules.convnet.ConvNet
+        init_args:
+          in_channels: 1024 # 512 + 512
+          out_channels: 80
+          n_stacks: 4
+          n_blocks: 2
+          hidden_size: 512
+          kernel_size: 5
+          activation: 'ReLU'
   D:
     class_path: modules.dscrm.Discriminator
     init_args:
@@ -88,14 +96,14 @@ model:
   G_commit_loss_coeff: 0.15
   G_vq_loss_coeff: 0.05
   G_adv_loss_coeff: 1.0
-  train_dtype: float32
+  train_dtype: bfloat16
   class_path: models.trainer.MegaGANTrainer
 data:
   ds_path: /data/sky/data/ds/
   max_duration_batch: 60
   min_duration: 2.1
   max_duration: 20
-  num_buckets: 2
+  num_buckets: 10
   num_workers: 4
   class_path: modules.datamodule.TTSDataModule
 ckpt_path: null

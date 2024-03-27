@@ -36,6 +36,12 @@ pip install lhotse
 pip install speechbrain
 pip install -r requirements.txt
 
+
+   21  export HF_ENDPOINT=https://hf-mirror.com
+   45  export ONEDNN_PRIMITIVE_CACHE_CAPACITY=0
+   46  export LRU_CACHE_CAPACITY=1
+   48  export TORCH_CUDNN_V8_API_DISABLED=1
+   
 ## Prepare dataset
 1. Prepare wav and txt files to ./data/wav 
 2. Run `python3 prepare_ds.py --stage 0 --num_workers 4 --wavtxt_path /data/sky/data/wavs --text_grid_path /data/sky/data/textgrids --ds_path /data/sky/data/ds`
