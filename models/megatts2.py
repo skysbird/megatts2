@@ -53,8 +53,8 @@ def make_g2p(text):
     return pronunciations[0].split()
 
 
-from g2p_zh_en.g2p_zh_en import G2P
-g2p = G2P()
+#from g2p_zh_en.g2p_zh_en import G2P
+#g2p = G2P()
 
 
 class MegaG(nn.Module):
