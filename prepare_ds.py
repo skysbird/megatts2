@@ -253,7 +253,6 @@ class DatasetMaker:
 
                 tc_latent, p_code = G.s2_latent(
                     batch['phone_tokens'].cuda(),
-                    batch['tokens_lens'].cuda(),
                     batch['mel_targets'].cuda(),
                     batch['mel_timbres'].cuda(),
                 )
