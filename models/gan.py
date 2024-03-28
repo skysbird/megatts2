@@ -103,7 +103,7 @@ class VQGANTTS(nn.Module):
         content_features = self.content_encoder(text)
         
         # x = self.mrte.tc_latent(content_features,  ref_audio_mrte, ref_audios)
-        x = self.mrte(content_features, ref_audio, ref_audios, duration_tokens)
+        x = self.mrte(content_features, ref_audio_mrte, ref_audios, duration_tokens)
         return x, codes
 
     @classmethod

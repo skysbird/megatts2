@@ -175,7 +175,7 @@ class MRTE(nn.Module):
 
     def forward(
             self,
-            duration_tokens: torch.TeJnsor,  # (B, T)
+            duration_tokens: torch.Tensor,  # (B, T)
             phone: torch.Tensor,  # (B, T)
             phone_lens: torch.Tensor,  # (B,)
             mel: torch.Tensor,  # (B, T, mel_bins)
