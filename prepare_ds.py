@@ -255,6 +255,7 @@ class DatasetMaker:
                     batch['phone_tokens'].cuda(),
                     batch['mel_targets'].cuda(),
                     batch['mel_timbres'].cuda(),
+                    batch['duration_tokens'].cuda(),
                 )
 
                 s2_latent['tc_latent'] = tc_latent.cpu().numpy()

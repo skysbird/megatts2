@@ -95,14 +95,15 @@ class VQGANTTS(nn.Module):
         # GAN Discriminator forward pass
         return self.gan_discriminator(mel)
     
-    def s2_latent(self,  text, ref_audio, ref_audios):
+    def s2_latent(self,  text, ref_audio, ref_audios, duration_tokens):
         ref_audio_mrte = ref_audio.permute(0,2,1)
         ref_audios = ref_audios.permute(0,2,1)
     
         _, _, _, codes = self.vq_prosody_encoder(ref_audio)
         content_features = self.content_encoder(text)
         
-        x = self.mrte.tc_latent(content_features,  ref_audio_mrte, ref_audios)
+        # x = self.mrte.tc_latent(content_features,  ref_audio_mrte, ref_audios)
+        x = self.mrte(content_features, ref_audio, ref_audios, duration_tokens)
         return x, codes
 
     @classmethod
