@@ -50,6 +50,8 @@ class ADM(nn.Module):
             duration_tokens: torch.Tensor,  # (B, T)
             lens: torch.Tensor,  # (B,)
     ):
+        
+        #要看一下这个tc_latents到底包不包含mrte的所有输入？mrte里面是存在一个GE的，会拉长整体的序列T维度的长度
         duration_embeddings = self.duration_embedding(duration_tokens[:, :-1])
         x_emb = torch.cat([tc_latents, duration_embeddings], dim=-1)
         x_pos = self.pos_encoder(x_emb)
