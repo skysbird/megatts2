@@ -53,6 +53,6 @@ data:
   min_duration: 2.1
   max_duration: 20
   num_buckets: 2
-  num_workers: 4
+  num_workers: 1
   class_path: modules.datamodule.TTSDataModule
 ckpt_path: null

@@ -132,6 +132,7 @@ class MRTE(nn.Module):
         # print(combined_output.shape)
         # print(f"MRTE combined_output shape: {combined_output.shape}")  
 
+
         #TODO c
         regulated_output = self.length_regulator(combined_output, target_length)  # [ T*target_length, B,mel_dim]
 

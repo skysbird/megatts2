@@ -258,6 +258,12 @@ class DatasetMaker:
                     batch['duration_tokens'].cuda(),
                 )
 
+                #print(batch)
+                print("tttt")
+                print(tc_latent.shape)
+                print(batch['duration_tokens'].shape)
+                print("uuuuuu")
+
                 s2_latent['tc_latent'] = tc_latent.cpu().numpy()
                 s2_latent['p_code'] = p_code.cpu().numpy()
 

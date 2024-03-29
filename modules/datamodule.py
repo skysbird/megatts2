@@ -269,8 +269,18 @@ class MegaADMDataset(torch.utils.data.Dataset):
 
             latents = np.load(f'{self.ds_path}/latents/{spk}/{id}.npy',
                               allow_pickle=True).item()
+            test_tc_latent = torch.from_numpy(latents['tc_latent'])
             tc_latent = torch.from_numpy(latents['tc_latent'])[0]
+            #print(latents['tc_latent'].shape)
+            #print(cut)
+            print("====")
+            print(spk)
+            print(id)
+            print(test_tc_latent.shape)
+            print(duration_tokens.shape)
+            print("----")
             assert tc_latent.shape[0] == duration_tokens.shape[0]
+            print("xxxx")
 
             duration_token_list.append(duration_tokens)
             tc_latent_list.append(tc_latent)
@@ -493,3 +503,4 @@ def test():
         # print(batch['duration_tokens'].shape)
         # print(batch['tc_latents'].shape)
         # print(batch['lens'].shape)
+
