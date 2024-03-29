@@ -230,8 +230,9 @@ class DatasetMaker:
 
         os.system(f'mkdir -p {self.args.ds_path}/latents')
 
-        G = VQGANTTS.from_pretrained(dm.args.generator_ckpt, dm.args.generator_config)
+        #G = VQGANTTS.from_pretrained(dm.args.generator_ckpt, dm.args.generator_config)
         # G = MegaG.from_pretrained(dm.args.generator_ckpt, dm.args.generator_config)
+        G = VQGANTTS.from_hparams(dm.args.generator_config)
         G = G.cuda()
         G.eval()
 
