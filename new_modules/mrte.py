@@ -110,8 +110,8 @@ class MRTE(nn.Module):
         # print("p")
         # print(phone.shape)
         # print(mel_encoded.shape)
-        phone = phone.permute(1,0,2)
-        attn_output, _ = self.multihead_attention(phone, mel_encoded, mel_encoded)  # [B, T, mel_dim]
+        phone_p = phone.permute(1,0,2)
+        attn_output, _ = self.multihead_attention(phone_p, mel_encoded, mel_encoded)  # [B, T, mel_dim]
 
         # Global Encoder
         global_features = self.global_encoder(global_mel_spec)  # [B, global_dim]
@@ -125,7 +125,14 @@ class MRTE(nn.Module):
         # print(attn_output.shape)
         # print(global_features.shape)
         # 合并Attention输出和全局特征
-        combined_output = torch.cat((attn_output, global_features), dim=0)  # [B, T*target_length, mel_dim+global_dim]
+        #combined_output = torch.cat((attn_output, global_features), dim=0)  # [B, T*target_length, mel_dim+global_dim]
+
+        #这个合并改成元素级别加法看看
+        combined_output = attn_output + global_features  # [B, T*target_length, mel_dim+global_dim]
+
+
+
+
         # print(combined_output.shape)
 
         combined_output = combined_output.permute(1,0,2)
