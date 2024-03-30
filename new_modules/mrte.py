@@ -73,7 +73,7 @@ class LengthRegulator(nn.Module):
 
         expand_max_len = torch.max(torch.sum(duration_tokens, -1), -1)[0].int()
 
-        alignment = torch.zeros(bsz, expand_max_len, input_len).numpy()
+        alignment = torch.zeros(bsz, expand_max_len, input_len).cpu().numpy()
         alignment = create_alignment(alignment, duration_tokens.cpu().numpy())
         alignment = torch.from_numpy(alignment).to(x.device)
         # print(alignment)
@@ -96,13 +96,13 @@ class MRTE(nn.Module):
         self.global_encoder = GlobalEncoder(first_channels=global_mel_dim)
         self.length_regulator = LengthRegulator()
 
-    def forward(self, phone, mel_spec, global_mel_spec, target_length):
+    def forward(self, phone, global_mel_spec, target_length):
 
         # 先卷到目标维
-        mel_spec = self.mel_conv(mel_spec)
+        mel_spec = self.mel_conv(global_mel_spec)
         # print(mel_spec.shape)
         # Mel Encoder
-        mel_encoded = self.mel_encoder(mel_spec)  # [B, T, mel_dim]
+        mel_encoded = self.mel_encoder(global_mel_spec)  # [B, T, mel_dim]
         # print(mel_encoded.shape)
 
         mel_encoded = mel_encoded.permute(2,0,1)
@@ -128,9 +128,15 @@ class MRTE(nn.Module):
         #combined_output = torch.cat((attn_output, global_features), dim=0)  # [B, T*target_length, mel_dim+global_dim]
 
         #这个合并改成元素级别加法看看
-        combined_output = attn_output + global_features  # [B, T*target_length, mel_dim+global_dim]
+        #print(attn_output.shape)
+        #print(global_features.shape)
+        #print(phone_p.shape)
 
+        t = phone_p.shape[0]
+        global_features_pooled = F.adaptive_avg_pool1d(global_features.cpu().transpose(0, 2), t).transpose(0, 2).to(phone_p[0].device)
 
+        #combined_output = attn_output + global_features_pooled  # [B, T*target_length, mel_dim+global_dim]
+        combined_output = phone_p + attn_output + global_features_pooled  # [B, T*target_length, mel_dim+global_dim]
 
 
         # print(combined_output.shape)
