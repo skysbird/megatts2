@@ -18,7 +18,9 @@ class ADM(nn.Module):
         super().__init__()
         self.nhead = nhead
         self.dd_model = d_model + tc_emb_dim
-        self.duration_embedding = nn.Embedding(num_duration_tokens, d_model)
+
+
+        self.duration_embedding = nn.Linear(1, num_duration_tokens, bias=False)
         self.pos_encoder = SinePositionalEmbedding(self.dd_model)
         # self.decoder_layers = TransformerDecoderLayer(self.dd_model, nhead, dim_feedforward, batch_first=True)
         # self.transformer_decoder = TransformerDecoder(self.decoder_layers, num_layers)
