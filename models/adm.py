@@ -7,26 +7,30 @@ from utils.utils import make_attn_mask
 from modules.transformer import TransformerEncoder, TransformerEncoderLayer
 
 class ADM(nn.Module):
-    def __init__(self, d_model=512, 
-                 nhead=16, 
-                 num_layers=8,
-                  dim_feedforward=8192,
-                  num_duration_tokens = 256,
-                  tc_emb_dim = 512,
-                  dropout = 0.1
+    def __init__(self, 
+                    d_model=512, 
+                    nhead=8, 
+                    num_layers=8,
+                    dt_emb_dim = 256, #dt emb_dim
+                    tc_emb_dim = 256,
+                    tc_latent_dim = 512,
+                    dropout = 0.1
                  ):
+        
         super().__init__()
         self.nhead = nhead
-        self.dd_model = num_duration_tokens + tc_emb_dim
+        d_model = dt_emb_dim + tc_emb_dim
 
 
-        self.duration_embedding = nn.Linear(1, num_duration_tokens, bias=False)
-        self.pos_encoder = SinePositionalEmbedding(self.dd_model)
+        self.duration_embedding = nn.Linear(1, dt_emb_dim, bias=False)
+        self.tc_emb = nn.Linear(tc_latent_dim, tc_emb_dim, bias=False)
+
+        self.pos_encoder = SinePositionalEmbedding(d_model)
         # self.decoder_layers = TransformerDecoderLayer(self.dd_model, nhead, dim_feedforward, batch_first=True)
         # self.transformer_decoder = TransformerDecoder(self.decoder_layers, num_layers)
         self.transformer_decoder = TransformerEncoder(
             TransformerEncoderLayer(
-                dim=self.dd_model,
+                dim=d_model,
                 ff_dim=d_model * 4,
                 n_heads=nhead,
                 dropout=dropout,
@@ -35,7 +39,7 @@ class ADM(nn.Module):
             num_layers=num_layers,
         )
 
-        self.output_layer = nn.Linear(self.dd_model, 1)  # Output layer for duration prediction
+        self.output_layer = nn.Linear(self.dd_model, 1, bias=False)  # Output layer for duration prediction
 
     # def forward(self, src, memory):
     #     src = self.pos_encoder(src)
@@ -56,9 +60,11 @@ class ADM(nn.Module):
        
         #要看一下这个tc_latents到底包不包含mrte的所有输入？mrte里面是存在一个GE的，会拉长整体的序列T维度的长度
         duration_embeddings = self.duration_embedding(duration_tokens[:, :-1])
+        tc_embeddings = self.tc_emb(tc_latents)
+
         #print(duration_embeddings.shape)
         #print(tc_latents.shape)
-        x_emb = torch.cat([tc_latents, duration_embeddings], dim=-1)
+        x_emb = torch.cat([tc_embeddings, duration_embeddings], dim=-1)
         #print(x_emb.shape)
         x_pos = self.pos_encoder(x_emb)
 
