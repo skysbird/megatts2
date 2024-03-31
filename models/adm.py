@@ -17,7 +17,7 @@ class ADM(nn.Module):
                  ):
         super().__init__()
         self.nhead = nhead
-        self.dd_model = d_model + tc_emb_dim
+        self.dd_model = num_duration_tokens + tc_emb_dim
 
 
         self.duration_embedding = nn.Linear(1, num_duration_tokens, bias=False)
@@ -56,10 +56,10 @@ class ADM(nn.Module):
        
         #要看一下这个tc_latents到底包不包含mrte的所有输入？mrte里面是存在一个GE的，会拉长整体的序列T维度的长度
         duration_embeddings = self.duration_embedding(duration_tokens[:, :-1])
-        print(duration_embeddings.shape)
-        print(tc_latents.shape)
+        #print(duration_embeddings.shape)
+        #print(tc_latents.shape)
         x_emb = torch.cat([tc_latents, duration_embeddings], dim=-1)
-        print(x_emb.shape)
+        #print(x_emb.shape)
         x_pos = self.pos_encoder(x_emb)
 
         # 生成掩码
@@ -84,7 +84,7 @@ class ADM(nn.Module):
 
         duration_tokens_predict = self.output_layer(x)[..., 0]
 
-        target = duration_tokens[:, 1:]
+        target = duration_tokens[:, 1:, 0]
 
         return duration_tokens_predict, target 
 
