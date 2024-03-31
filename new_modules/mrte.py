@@ -96,13 +96,13 @@ class MRTE(nn.Module):
         self.global_encoder = GlobalEncoder(first_channels=global_mel_dim)
         self.length_regulator = LengthRegulator()
 
-    def forward(self, phone, global_mel_spec, target_length):
+    def forward(self, phone, mel_spec, global_mel_spec, target_length):
 
         # 先卷到目标维
-        mel_spec = self.mel_conv(global_mel_spec)
+        mel_spec_conv = self.mel_conv(mel_spec)
         # print(mel_spec.shape)
         # Mel Encoder
-        mel_encoded = self.mel_encoder(global_mel_spec)  # [B, T, mel_dim]
+        mel_encoded = self.mel_encoder(mel_spec_conv)  # [B, T, mel_dim]
         # print(mel_encoded.shape)
 
         mel_encoded = mel_encoded.permute(2,0,1)
@@ -148,56 +148,58 @@ class MRTE(nn.Module):
 
         #TODO c
         regulated_output = self.length_regulator(combined_output, target_length)  # [ T*target_length, B,mel_dim]
-
         return regulated_output
     
-    # def tc_latent(self, phone, mel_spec, global_mel_spec,target_length):
-    #      # 先卷到目标维
-    #     mel_spec = self.mel_conv(mel_spec)
-    #     # print(mel_spec.shape)
-    #     # Mel Encoder
-    #     mel_encoded = self.mel_encoder(mel_spec)  # [B, T, mel_dim]
-    #     # print(mel_encoded.shape)
+    def tc_latent(self, phone, mel_spec, global_mel_spec, target_length):
 
-    #     mel_encoded = mel_encoded.permute(2,0,1)
-    #     # Multi-Head Attention
-    #     # print("p")
-    #     # print(phone.shape)
-    #     # print(mel_encoded.shape)
-    #     phone = phone.permute(1,0,2)
+        # 先卷到目标维
+        mel_spec_conv = self.mel_conv(mel_spec)
+        # print(mel_spec.shape)
+        # Mel Encoder
+        mel_encoded = self.mel_encoder(mel_spec_conv)  # [B, T, mel_dim]
+        # print(mel_encoded.shape)
 
-    #     print("pppppp")
-    #     print(phone.shape)
-    #     attn_output, _ = self.multihead_attention(phone, mel_encoded, mel_encoded)  # [B, T, mel_dim]
+        mel_encoded = mel_encoded.permute(2,0,1)
+        # Multi-Head Attention
+        # print("p")
+        # print(phone.shape)
+        # print(mel_encoded.shape)
+        phone_p = phone.permute(1,0,2)
+        attn_output, _ = self.multihead_attention(phone_p, mel_encoded, mel_encoded)  # [B, T, mel_dim]
 
-    #     print(attn_output.shape)
-    #     print(target_length.shape)
+        # Global Encoder
+        global_features = self.global_encoder(global_mel_spec)  # [B, global_dim]
+        # global_features = global_features.unsqueeze(1).expand(-1, attn_output.size(1), -1)  # [B, T, global_dim]
+        # global_features = self.global_encoder(attn_output.mean(dim=0))
 
-    #     # Global Encoder
-    #     global_features = self.global_encoder(global_mel_spec)  # [B, global_dim]
-    #     # global_features = global_features.unsqueeze(1).expand(-1, attn_output.size(1), -1)  # [B, T, global_dim]
-    #     # global_features = self.global_encoder(attn_output.mean(dim=0))
-
-    #     # Length Regulator
-    #     global_features = global_features.permute(2,0,1)
-    #     attn_output = attn_output.permute(0,1,2)
+        # Length Regulator
+        global_features = global_features.permute(2,0,1)
+        attn_output = attn_output.permute(0,1,2)
         
-    #     # print(attn_output.shape)
-    #     # print(global_features.shape)
-    #     # 合并Attention输出和全局特征
-    #     print(global_features.shape)
-    #     combined_output = torch.cat((attn_output, global_features), dim=0)  # [B, T*target_length, mel_dim+global_dim]
-    #     # print(combined_output.shape)
+        # print(attn_output.shape)
+        # print(global_features.shape)
+        # 合并Attention输出和全局特征
+        #combined_output = torch.cat((attn_output, global_features), dim=0)  # [B, T*target_length, mel_dim+global_dim]
 
-    #     print(combined_output.shape)
-    #     combined_output = combined_output.permute(1,0,2)
+        #这个合并改成元素级别加法看看
+        #print(attn_output.shape)
+        #print(global_features.shape)
+        #print(phone_p.shape)
+
+        t = phone_p.shape[0]
+        global_features_pooled = F.adaptive_avg_pool1d(global_features.cpu().transpose(0, 2), t).transpose(0, 2).to(phone_p[0].device)
+
+        #combined_output = attn_output + global_features_pooled  # [B, T*target_length, mel_dim+global_dim]
+        combined_output = phone_p + attn_output + global_features_pooled  # [B, T*target_length, mel_dim+global_dim]
 
 
-    #     regulated_output = self.length_regulator(combined_output, target_length)  # [ T*target_length, B,mel_dim]
-    #     print(regulated_output.shape)
+        # print(combined_output.shape)
 
-    #     print("qqqq")
-    #     return combined_output
+        combined_output = combined_output.permute(1,0,2)
+        # print(combined_output.shape)
+        # print(f"MRTE combined_output shape: {combined_output.shape}")  
+
+        return combined_output
 
 
 if __name__=='__main__':

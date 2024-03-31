@@ -230,9 +230,9 @@ class DatasetMaker:
 
         os.system(f'mkdir -p {self.args.ds_path}/latents')
 
-        #G = VQGANTTS.from_pretrained(dm.args.generator_ckpt, dm.args.generator_config)
-        # G = MegaG.from_pretrained(dm.args.generator_ckpt, dm.args.generator_config)
-        G = VQGANTTS.from_hparams(dm.args.generator_config)
+        G = VQGANTTS.from_pretrained(dm.args.generator_ckpt, dm.args.generator_config)
+        #G = MegaG.from_pretrained(dm.args.generator_ckpt, dm.args.generator_config)
+        #G = VQGANTTS.from_hparams(dm.args.generator_config)
         G = G.cuda()
         G.eval()
 
@@ -260,10 +260,10 @@ class DatasetMaker:
                 )
 
                 #print(batch)
-                print("tttt")
-                print(tc_latent.shape)
-                print(batch['duration_tokens'].shape)
-                print("uuuuuu")
+                #print("tttt")
+                #print(tc_latent.shape)
+                #print(batch['duration_tokens'].shape)
+                #print("uuuuuu")
 
                 s2_latent['tc_latent'] = tc_latent.cpu().numpy()
                 s2_latent['p_code'] = p_code.cpu().numpy()

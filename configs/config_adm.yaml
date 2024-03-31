@@ -24,7 +24,7 @@ trainer:
   # limit_val_batches: 100
   accelerator: gpu
   log_every_n_steps: 100
-  # val_check_interval: 1000
+  val_check_interval: 1000
   check_val_every_n_epoch: 1
 
   # strategy: ddp
@@ -52,7 +52,7 @@ data:
   max_duration_batch: 400
   min_duration: 2.1
   max_duration: 20
-  num_buckets: 2
-  num_workers: 1
+  num_buckets: 10
+  num_workers: 4
   class_path: modules.datamodule.TTSDataModule
 ckpt_path: null

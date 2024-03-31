@@ -102,8 +102,15 @@ class VQGANTTS(nn.Module):
         _, _, _, codes = self.vq_prosody_encoder(ref_audio)
         content_features = self.content_encoder(text)
       
-        #x = self.mrte.tc_latent(content_features,  ref_audio_mrte, ref_audios,duration_tokens)
-        x = self.mrte(content_features, ref_audio_mrte, ref_audios, duration_tokens)
+        x = self.mrte.tc_latent(content_features, ref_audio_mrte,  ref_audios,duration_tokens)
+        #x = self.mrte(content_features, ref_audios, duration_tokens)
+        #print("ssss")
+        #print(x.shape)
+        #print(ref_audios.shape)
+        #print(text.shape)
+        #print(content_features.shape)
+        #print(duration_tokens.shape)
+        #print("sssss")
         return x, codes
 
     @classmethod
