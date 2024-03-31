@@ -48,7 +48,7 @@ model:
   train_dtype: float32
   class_path: models.trainer.MegaPLMTrainer
 data:
-  ds_path: /root/autodl-tmp/megatts2/data/ds/
+  ds_path: /data/sky/data/ds/
   dataset: MegaADMDataset
   max_duration_batch: 400
   min_duration: 2.1
