@@ -7,12 +7,12 @@ from utils.utils import make_attn_mask
 from modules.transformer import TransformerEncoder, TransformerEncoderLayer
 
 class ADM(nn.Module):
-    def __init__(self, d_model=2048, 
+    def __init__(self, d_model=512, 
                  nhead=16, 
-                 num_layers=24,
+                 num_layers=8,
                   dim_feedforward=8192,
                   num_duration_tokens = 256,
-                  tc_emb_dim = 1024,
+                  tc_emb_dim = 512,
                   dropout = 0.1
                  ):
         super().__init__()
