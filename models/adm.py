@@ -31,7 +31,7 @@ class ADM(nn.Module):
         self.transformer_decoder = TransformerEncoder(
             TransformerEncoderLayer(
                 dim=d_model,
-                ff_dim=d_model * 4,
+                ff_dim=dt_emb_dim * 4,
                 n_heads=nhead,
                 dropout=dropout,
                 conv_ff=False,
