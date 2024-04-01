@@ -146,7 +146,7 @@ class Mega2(nn.Module):
             p_codes = self.plm.infer(tc_latent)
 
             print("pppp",p_codes)
-            zq = self.generator.vqpe.vq.decode(p_codes.unsqueeze(0))
+            zq = self.generator.vq_prosody_encoder.vq.decode(p_codes.unsqueeze(0))
             zq = rearrange(
                 zq, "B D T -> B T D").unsqueeze(2).contiguous().expand(-1, -1, 8, -1)
             zq = rearrange(zq, "B T S D -> B (T S) D")
@@ -154,7 +154,7 @@ class Mega2(nn.Module):
                 [tc_latent_expand, zq[:, :tc_latent_expand.shape[1], :]], dim=-1)
             print(x.shape)
             x = rearrange(x, 'B T D -> B D T')
-            x = self.generator.decoder(x)
+            x = self.generator.mel_decoder(x)
 
             audio = self.hifi_gan.decode_batch(x.cpu())
  
