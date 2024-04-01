@@ -6,6 +6,9 @@ from new_modules.embedding import SinePositionalEmbedding
 from utils.utils import make_attn_mask
 from modules.transformer import TransformerEncoder, TransformerEncoderLayer
 
+from utils.utils import instantiate_class
+import yaml 
+
 class ADM(nn.Module):
     def __init__(self, 
                     d_model=512, 
@@ -93,7 +96,23 @@ class ADM(nn.Module):
         target = duration_tokens[:, 1:, 0]
 
         return duration_tokens_predict, target 
+    
+    @classmethod
+    def from_pretrained(self, ckpt: str, config: str) -> "MegaADM":
 
+        with open(config, "r") as f:
+            config = yaml.safe_load(f)
+
+            adm_config = config['model']['adm']
+            adm = instantiate_class(args=(), init=adm_config)
+
+        state_dict = {}
+        for k, v in torch.load(ckpt)['state_dict'].items():
+            if k.startswith('adm.'):
+                state_dict[k[4:]] = v
+
+        adm.load_state_dict(state_dict, strict=True)
+        return adm
 
 if __name__=='__main__':
     # Example usage
