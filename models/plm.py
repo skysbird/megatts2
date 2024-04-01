@@ -60,6 +60,24 @@ class PLMModel(nn.Module):
         #print(target.shape)
         return logits, target
     
+    def infer(
+            self,
+            tc_latent: torch.Tensor,  # (B, T, D)
+    ):
+        T = tc_latent.shape[1]
+        p_code = torch.Tensor([1024]).to(
+            tc_latent.device).type(torch.int64).unsqueeze(0)
+        for t in range(T):
+            pc_emb = self.pc_embedding(p_code)
+            x_emb = torch.cat([tc_latent[:, 0:t+1, :], pc_emb], dim=-1)
+            x_pos = self.positional_encoding(x_emb)
+
+            x = self.plm(x_pos)
+            logits = self.output_layer(x)[:, -1:, :]
+            p_code = torch.cat([p_code, logits.argmax(dim=-1)], dim=1)
+
+        return p_code[:, 1:]
+    
     @classmethod
     def from_pretrained(cls, ckpt: str, config: str) -> "PLM":
 

@@ -97,6 +97,27 @@ class ADM(nn.Module):
 
         return duration_tokens_predict, target 
     
+    def infer(
+        self,
+        tc_latents: torch.Tensor,  # (B, T, D)
+    ):
+        T = tc_latents.shape[1]
+        p_code = torch.Tensor([0]).to(
+            tc_latents.device).unsqueeze(0).unsqueeze(1)
+        for t in range(T):
+            dt_emb = self.duration_embeddingu(p_code)
+            tc_emb = self.tc_emb(tc_latents[:, 0:t+1, :])
+
+            x_emb = torch.cat([tc_emb, dt_emb], dim=-1)
+            x_pos = self.pos_encoder(x_emb)
+
+            x = self.transformer_decoder(x_pos)
+            dt_predict = self.output_layer(x)[:, -1:, :]
+            p_code = torch.cat([p_code, dt_predict], dim=1)
+
+        return (p_code[:, 1:, :] + 0.5).to(torch.int32).clamp(1, 128)
+
+
     @classmethod
     def from_pretrained(self, ckpt: str, config: str) -> "MegaADM":
 
