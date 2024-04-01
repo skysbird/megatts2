@@ -4,6 +4,8 @@ from torch.nn import TransformerDecoder, TransformerDecoderLayer
 from modules.transformer import TransformerEncoder, TransformerEncoderLayer
 
 from new_modules.embedding import SinePositionalEmbedding
+from utils.utils import instantiate_class
+import yaml 
 
 class PLMModel(nn.Module):
     def __init__(self, 
@@ -57,6 +59,23 @@ class PLMModel(nn.Module):
         #print(logits.shape)
         #print(target.shape)
         return logits, target
+    
+    @classmethod
+    def from_pretrained(cls, ckpt: str, config: str) -> "PLM":
+
+        with open(config, "r") as f:
+            config = yaml.safe_load(f)
+
+            plm_config = config['model']['plm']
+            plm = instantiate_class(args=(), init=plm_config)
+
+        state_dict = {}
+        for k, v in torch.load(ckpt)['state_dict'].items():
+            if k.startswith('plm.'):
+                state_dict[k[4:]] = v
+
+        plm.load_state_dict(state_dict, strict=True)
+        return plm
 
 if __name__=='__main__':
     # Assuming the inputs are:
