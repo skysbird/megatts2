@@ -2,11 +2,11 @@ from models.mega2 import Mega2
 
 if __name__ == '__main__':
     megatts = Mega2(
-        g_ckpt='generator.ckpt',
+        g_ckpt='/data/sky/gan.ckpt',
         g_config='configs/config_gan.yaml',
-        plm_ckpt='plm.ckpt',
+        plm_ckpt='/data/sky/plm.ckpt',
         plm_config='configs/config_plm.yaml',
-        adm_ckpt='adm.ckpt',
+        adm_ckpt='/data/sky/adm_2_8903.ckpt',
         adm_config='configs/config_adm.yaml',
         symbol_table='/data/sky/data/ds/unique_text_tokens.k2symbols'
     )
@@ -17,7 +17,7 @@ if __name__ == '__main__':
     text = 'Hello this is a test'
 
     megatts(
-        '/data/sky/data/wavs/121/',
+        '/data/sky/data/wavs/1212/',
         text
     )
 
