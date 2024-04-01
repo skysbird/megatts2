@@ -1,7 +1,7 @@
-from models.megatts2 import Megatts
+from models.mega2 import Mega2
 
 if __name__ == '__main__':
-    megatts = Megatts(
+    megatts = Mega2(
         g_ckpt='generator.ckpt',
         g_config='configs/config_gan.yaml',
         plm_ckpt='plm.ckpt',
