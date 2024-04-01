@@ -37,7 +37,7 @@ class PLMModel(nn.Module):
 
         self.pc_embedding = nn.Embedding(vq_bins + 2, vq_dim)
 
-        self.output_layer = nn.Linear(td_model, d_model, bias=False)
+        self.output_layer = nn.Linear(td_model, td_model, bias=False)
 
     def forward(
             self,

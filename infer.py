@@ -14,7 +14,7 @@ if __name__ == '__main__':
     megatts.eval()
 
     # text = 'Also, a popular contrivance whereby'
-    text = 'is a good day is a good day is a good day is a good day is a good day is a good day'
+    text = 'Hello this is a test'
 
     megatts(
         '/data/sky/data/wavs/121/',
