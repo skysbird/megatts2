@@ -105,7 +105,7 @@ class ADM(nn.Module):
         p_code = torch.Tensor([0]).to(
             tc_latents.device).unsqueeze(0).unsqueeze(1)
         for t in range(T):
-            dt_emb = self.duration_embeddingu(p_code)
+            dt_emb = self.duration_embedding(p_code)
             tc_emb = self.tc_emb(tc_latents[:, 0:t+1, :])
 
             x_emb = torch.cat([tc_emb, dt_emb], dim=-1)
