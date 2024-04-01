@@ -315,6 +315,9 @@ class MegaPLMTrainer(pl.LightningModule):
         # ignore padding
         loss = F.cross_entropy(logits, y, reduction="sum", ignore_index=1024 + 1)
         loss_log = loss / y.shape[0] / y.shape[1]
+
+        #print(logits.detach().shape)
+        #print(y.shape)
         ac10 = self.accuracy_metric(logits.detach(), y)
 
         return loss, loss_log, ac10
