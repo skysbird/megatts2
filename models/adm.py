@@ -39,7 +39,7 @@ class ADM(nn.Module):
             num_layers=num_layers,
         )
 
-        self.output_layer = nn.Linear(self.dd_model, 1, bias=False)  # Output layer for duration prediction
+        self.output_layer = nn.Linear(d_model, 1, bias=False)  # Output layer for duration prediction
 
     # def forward(self, src, memory):
     #     src = self.pos_encoder(src)

@@ -36,7 +36,6 @@ model:
   adm:
     class_path: models.adm.ADM
     init_args:
-      d_model: 512
       nhead: 8
       num_layers: 8
       dt_emb_dim: 256
