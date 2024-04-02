@@ -9,7 +9,7 @@ import transformers
 import numpy as np
 import math
 
-from models.gan import VQGANTTS
+from models.gan2 import VQGANTTS
 from models.adm import ADM
 from models.plm import PLMModel
 
@@ -131,7 +131,7 @@ class MegaGANTrainer(pl.LightningModule):
             self.log("train/G_loss_total", G_loss_total, prog_bar=True)
             self.log("train/G_loss_adv", G_loss_adv)
             self.log("train/G_loss", G_loss)
-            self.log("train/G_loss_commit", G_loss_commit)
+            #self.log("train/G_loss_commit", G_loss_commit)
             # self.log("train/G_loss_vq", G_loss_vq)
             self.log("train/G_loss_re", G_loss_re)
 
