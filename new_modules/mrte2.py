@@ -86,14 +86,31 @@ class LengthRegulator(nn.Module):
         return output
     
 # 定义一个MRTE，这里我们假设Mel Encoder输出和Multi-Head Attention的结构和维度
-class MRTE(nn.Module):
+class MRTE2(nn.Module):
     def __init__(self, mel_dim, global_mel_dim, hidden_size, n_heads):
         super(MRTE, self).__init__()
 
-        self.mel_conv = nn.Conv1d(in_channels=mel_dim, out_channels=hidden_size, kernel_size=3, padding=1)
-        self.mel_encoder = MelGenerator() 
+        kernel_size = 3
+        num_layers = 5
+        self.conv_blocks = nn.ModuleList([
+            nn.Sequential(
+                nn.Conv1d(mel_dim if i == 0 else hidden_size, hidden_size, kernel_size, padding=kernel_size//2),
+                nn.LayerNorm(hidden_size),
+                nn.GELU(),
+                nn.Conv1d(hidden_size, hidden_size, kernel_size, padding=kernel_size//2),
+                nn.LayerNorm(hidden_size),
+                nn.GELU()
+            ) for i in range(num_layers)
+        ])
+
+        downsample_factor = 16
+        # 定义16倍下采样层
+        self.downsample = nn.Conv1d(hidden_size, hidden_size, kernel_size=1, stride=downsample_factor)
+
+        # self.mel_conv = nn.Conv1d(in_channels=mel_dim, out_channels=hidden_size, kernel_size=3, padding=1)
+        # self.mel_encoder = MelGenerator() 
         self.multihead_attention = nn.MultiheadAttention(embed_dim=hidden_size, num_heads=n_heads)
-        self.global_encoder = GlobalEncoder(first_channels=global_mel_dim)
+        # self.global_encoder = GlobalEncoder(first_channels=global_mel_dim)
         self.length_regulator = LengthRegulator()
 
     def forward(self, 
@@ -103,57 +120,37 @@ class MRTE(nn.Module):
                 target_length #target duration (B,T)
                 ):
 
-        # 先卷到目标维
-        mel_spec_conv = self.mel_conv(mel_spec)
-        # print(mel_spec.shape)
-        # Mel Encoder
-        mel_encoded = self.mel_encoder(mel_spec_conv)  # [B, T, mel_dim]
-        # print(mel_encoded.shape)
+        mel_encoded = global_mel_spec
+        #卷
+        for conv_block in self.conv_blocks:
+            mel_encoded = conv_block(mel_encoded)
 
-        mel_encoded = mel_encoded.permute(2,0,1)
+        #下采样
+        mel_encoded = self.downsample(mel_encoded)
+
+        #卷
+        for conv_block in self.conv_blocks:
+            mel_encoded = conv_block(mel_encoded)
+
+
+        mel_encoded = mel_encoded.permute(2,0,1) #zt
         # Multi-Head Attention
-        # print("p")
-        # print(phone.shape)
-        # print(mel_encoded.shape)
-        phone_p = phone.permute(1,0,2)
-        attn_output, _ = self.multihead_attention(phone_p, mel_encoded, mel_encoded)  # [B, T, mel_dim]
 
-        # Global Encoder
-        global_features = self.global_encoder(global_mel_spec)  # [B, global_dim]
-        # global_features = global_features.unsqueeze(1).expand(-1, attn_output.size(1), -1)  # [B, T, global_dim]
-        # global_features = self.global_encoder(attn_output.mean(dim=0))
+        return mel_encoded #zt
 
-        # Length Regulator
-        global_features = global_features.permute(2,0,1)
-        attn_output = attn_output.permute(0,1,2)
+        # phone_p = phone.permute(1,0,2) #zc
+        # attn_output, _ = self.multihead_attention(phone_p, mel_encoded, mel_encoded)  # [B, T, mel_dim]
+
         
-        # print(attn_output.shape)
-        # print(global_features.shape)
-        # 合并Attention输出和全局特征
-        #combined_output = torch.cat((attn_output, global_features), dim=0)  # [B, T*target_length, mel_dim+global_dim]
+        # attn_output = attn_output.permute(0,1,2)
+        
+        # combined_output = phone_p + attn_output  
 
-        #这个合并改成元素级别加法看看
-        #print(attn_output.shape)
-        #print(global_features.shape)
-        #print(phone_p.shape)
+        # combined_output = combined_output.permute(1,0,2)
 
-        t = phone_p.shape[0]
-        global_features_pooled = F.adaptive_avg_pool1d(global_features.cpu().transpose(0, 2), t).transpose(0, 2).to(phone_p[0].device)
-
-        #combined_output = attn_output + global_features_pooled  # [B, T*target_length, mel_dim+global_dim]
-        combined_output = phone_p + attn_output + global_features_pooled  # [B, T*target_length, mel_dim+global_dim]
-
-
-        # print(combined_output.shape)
-
-        combined_output = combined_output.permute(1,0,2)
-        # print(combined_output.shape)
-        # print(f"MRTE combined_output shape: {combined_output.shape}")  
-
-
-        #TODO c
-        regulated_output = self.length_regulator(combined_output, target_length)  # [ T*target_length, B,mel_dim]
-        return regulated_output
+        # #上采样
+        # regulated_output = self.length_regulator(combined_output, target_length)  # [ T*target_length, B,mel_dim]
+        # return regulated_output
     
     def tc_latent(self, phone, mel_spec, global_mel_spec, target_length):
 
@@ -205,6 +202,29 @@ class MRTE(nn.Module):
         # print(f"MRTE combined_output shape: {combined_output.shape}")  
 
         return combined_output
+
+
+
+
+class MultiReferenceTimbreEncoder(nn.Module):
+    def __init__(self, mel_channels, hidden_channels, num_layers, kernel_size, downsample_factor):
+        super(MultiReferenceTimbreEncoder, self).__init__()
+        # 定义卷积层，每个后面跟着层归一化和GELU激活函数重复两次
+        
+
+    def forward(self, mel_spec, global_mel_spec):
+        # Concatenate the reference mel-spectrograms and the target mel-spectrogram
+        concatenated_mels = torch.cat([global_mel_spec, mel_spec], dim=1)
+        concatenated_mels = concatenated_mels.transpose(1, 2)  # Change dimensions to (B, D, T)
+
+        # Pass the concatenated mel-spectrograms through the convolutional blocks
+        for conv_block in self.conv_blocks:
+            concatenated_mels = conv_block(concatenated_mels)
+
+        # Perform downsampling
+        z_t = self.downsample(concatenated_mels)
+
+        return z_t
 
 
 if __name__=='__main__':
