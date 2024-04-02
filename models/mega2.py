@@ -83,19 +83,22 @@ class Mega2(nn.Module):
             self,
             wavs_dir: str,
             text: str,
+            ref_wav: str
     ):
         mels_prompt = None
 
         #wav = '/data/sky/data/wavs/121/121_121726_000004_000003.wav'
-        #y = librosa.load(wav, sr=HIFIGAN_SR)[0]
-        #y = librosa.util.normalize(y)
-        # y = librosa.effects.trim(y, top_db=20)[0]
-        #y = torch.from_numpy(y)
+        if ref_wav:
+            print("ref"+ref_wav)
+            y = librosa.load(ref_wav, sr=HIFIGAN_SR)[0]
+            y = librosa.util.normalize(y)
+            #y = librosa.effects.trim(y, top_db=20)[0]
+            y = torch.from_numpy(y)
 
-        #mel_spec = extract_mel_spec(y).transpose(0, 1)
+            mel_spec = extract_mel_spec(y).transpose(0, 1)
 
-        #mels_prompt = mel_spec
-        mels_prompt = None
+            mels_prompt = mel_spec
+        #mels_prompt = None
 
         
         # Make mrte mels
@@ -112,6 +115,7 @@ class Mega2(nn.Module):
 
             if mels_prompt is None:
                 mels_prompt = mel_spec
+                print("p_"+wav)
             print(wav)
 
         mels = mels.unsqueeze(0)
@@ -129,9 +133,10 @@ class Mega2(nn.Module):
         print(phone_tokens.shape)
         with torch.no_grad():
             mels = mels.permute(0,2,1)
+            mels_prompt = mels_prompt.unsqueeze(0).permute(0,2,1)
             phone_tokens = self.generator.content_encoder(phone_tokens)
             print(phone_tokens.shape)
-            tc_latent = self.generator.mrte.tc_latent(phone_tokens, mels, mels, None)
+            tc_latent = self.generator.mrte.tc_latent(phone_tokens, mels_prompt, mels, None)
             print("t1",tc_latent)
             dt = self.adm.infer(tc_latent)[..., 0]
             tc_latent_expand = self.lr(tc_latent, dt)

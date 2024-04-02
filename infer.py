@@ -14,11 +14,12 @@ if __name__ == '__main__':
     megatts.eval()
 
     # text = 'Also, a popular contrivance whereby'
-    text = 'Hello this is a test'
+    text = 'She is very clever learns quickly'
 
     megatts(
-        '/data/sky/data/wavs/1212/',
-        text
+        '/data/sky/data/wavs/986',
+        text,
+        '/data/sky/data/wavs/986/986_129388_000002_000009.wav'
     )
 
     # text = 'Also, a popular contrivance whereby'
