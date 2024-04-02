@@ -102,7 +102,7 @@ class ContentEncoder2(nn.Module):
         phonemes = self.phone_embedding(phonemes)
         phonemes = self.pos_encoder(phonemes)
         for layer in self.transformer_layers:
-            phonemes = layer(phonemes,
+            phonemes, _ = layer(phonemes,
                              non_pad_mask,
                              slf_attn_mask) #    def forward(self, enc_input, non_pad_mask=None, slf_attn_mask=None):
 

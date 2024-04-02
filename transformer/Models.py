@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import numpy as np
-import hparams as hp
 
 import transformer.Constants as Constants
 from transformer.Layers import FFTBlock, PreNet, PostNet, Linear
@@ -46,99 +45,3 @@ def get_attn_key_pad_mask(seq_k, seq_q):
     return padding_mask
 
 
-class Encoder(nn.Module):
-    ''' Encoder '''
-
-    def __init__(self,
-                 n_src_vocab=hp.vocab_size,
-                 len_max_seq=hp.vocab_size,
-                 d_word_vec=hp.encoder_dim,
-                 n_layers=hp.encoder_n_layer,
-                 n_head=hp.encoder_head,
-                 d_k=hp.encoder_dim // hp.encoder_head,
-                 d_v=hp.encoder_dim // hp.encoder_head,
-                 d_model=hp.encoder_dim,
-                 d_inner=hp.encoder_conv1d_filter_size,
-                 dropout=hp.dropout):
-
-        super(Encoder, self).__init__()
-
-        n_position = len_max_seq + 1
-
-        self.src_word_emb = nn.Embedding(n_src_vocab,
-                                         d_word_vec,
-                                         padding_idx=Constants.PAD)
-
-        self.position_enc = nn.Embedding.from_pretrained(
-            get_sinusoid_encoding_table(n_position, d_word_vec, padding_idx=0),
-            freeze=True)
-
-        self.layer_stack = nn.ModuleList([FFTBlock(
-            d_model, d_inner, n_head, d_k, d_v, dropout=dropout) for _ in range(n_layers)])
-
-    def forward(self, src_seq, src_pos, return_attns=False):
-
-        enc_slf_attn_list = []
-
-        # -- Prepare masks
-        slf_attn_mask = get_attn_key_pad_mask(seq_k=src_seq, seq_q=src_seq)
-        non_pad_mask = get_non_pad_mask(src_seq)
-
-        # -- Forward
-        enc_output = self.src_word_emb(src_seq) + self.position_enc(src_pos)
-
-        for enc_layer in self.layer_stack:
-            enc_output, enc_slf_attn = enc_layer(
-                enc_output,
-                non_pad_mask=non_pad_mask,
-                slf_attn_mask=slf_attn_mask)
-            if return_attns:
-                enc_slf_attn_list += [enc_slf_attn]
-
-        return enc_output, non_pad_mask
-
-
-class Decoder(nn.Module):
-    """ Decoder """
-
-    def __init__(self,
-                 len_max_seq=hp.max_seq_len,
-                 n_layers=hp.decoder_n_layer,
-                 n_head=hp.decoder_head,
-                 d_k=hp.decoder_dim // hp.decoder_head,
-                 d_v=hp.decoder_dim // hp.decoder_head,
-                 d_model=hp.decoder_dim,
-                 d_inner=hp.decoder_conv1d_filter_size,
-                 dropout=hp.dropout):
-
-        super(Decoder, self).__init__()
-
-        n_position = len_max_seq + 1
-
-        self.position_enc = nn.Embedding.from_pretrained(
-            get_sinusoid_encoding_table(n_position, d_model, padding_idx=0),
-            freeze=True)
-
-        self.layer_stack = nn.ModuleList([FFTBlock(
-            d_model, d_inner, n_head, d_k, d_v, dropout=dropout) for _ in range(n_layers)])
-
-    def forward(self, enc_seq, enc_pos, return_attns=False):
-
-        dec_slf_attn_list = []
-
-        # -- Prepare masks
-        slf_attn_mask = get_attn_key_pad_mask(seq_k=enc_pos, seq_q=enc_pos)
-        non_pad_mask = get_non_pad_mask(enc_pos)
-
-        # -- Forward
-        dec_output = enc_seq + self.position_enc(enc_pos)
-
-        for dec_layer in self.layer_stack:
-            dec_output, dec_slf_attn = dec_layer(
-                dec_output,
-                non_pad_mask=non_pad_mask,
-                slf_attn_mask=slf_attn_mask)
-            if return_attns:
-                dec_slf_attn_list += [dec_slf_attn]
-
-        return dec_output
