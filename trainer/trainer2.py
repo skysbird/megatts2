@@ -81,7 +81,7 @@ class MegaGANTrainer(pl.LightningModule):
         # forward(self, duration_tokens, text, ref_audio, ref_audios):
 
         y_hat = self.G(
-            text=batch["phone_tokens"],
+            phonemes=batch["phone_tokens"],
             duration_tokens=batch["duration_tokens"],
         )
 

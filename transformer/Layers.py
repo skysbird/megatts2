@@ -5,7 +5,6 @@ import numpy as np
 from collections import OrderedDict
 
 from transformer.SubLayers import MultiHeadAttention, PositionwiseFeedForward
-from text.symbols import symbols
 
 
 class Linear(nn.Module):
