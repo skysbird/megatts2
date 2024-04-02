@@ -140,29 +140,29 @@ class Mega2(nn.Module):
             print("t1",tc_latent)
             dt = self.adm.infer(tc_latent)[..., 0]
 
-            x, _ = self.generator(dt, phone_tokens,mels,mels )
+            # x, _ = self.generator(dt, phone_tokens,mels,mels )
 
-            # tc_latent_expand = self.lr(tc_latent, dt)
+            tc_latent_expand = self.lr(tc_latent, dt)
 
-            # # tc_latent = self.generator.mrte(dt, phone_tokens, mels)
+            # tc_latent = self.generator.mrte(dt, phone_tokens, mels)
             
-            # tc_latent = F.max_pool1d(tc_latent_expand.transpose(
-            #     1, 2), 8, ceil_mode=True).transpose(1, 2)
+            tc_latent = F.max_pool1d(tc_latent_expand.transpose(
+                1, 2), 8, ceil_mode=True).transpose(1, 2)
 
-            # print("ttt",tc_latent)
+            print("ttt",tc_latent)
 
-            # p_codes = self.plm.infer(tc_latent)
+            p_codes = self.plm.infer(tc_latent)
 
-            # print("pppp",p_codes)
-            # zq = self.generator.vq_prosody_encoder.vq.decode(p_codes.unsqueeze(0))
-            # zq = rearrange(
-            #     zq, "B D T -> B T D").unsqueeze(2).contiguous().expand(-1, -1, 8, -1)
-            # zq = rearrange(zq, "B T S D -> B (T S) D")
-            # x = torch.cat(
-            #     [tc_latent_expand, zq[:, :tc_latent_expand.shape[1], :]], dim=-1)
-            # print(x.shape)
-            # x = rearrange(x, 'B T D -> B D T')
-            # x = self.generator.mel_decoder(x)
+            print("pppp",p_codes)
+            zq = self.generator.vq_prosody_encoder.vq.decode(p_codes.unsqueeze(0))
+            zq = rearrange(
+                zq, "B D T -> B T D").unsqueeze(2).contiguous().expand(-1, -1, 8, -1)
+            zq = rearrange(zq, "B T S D -> B (T S) D")
+            x = torch.cat(
+                [tc_latent_expand, zq[:, :tc_latent_expand.shape[1], :]], dim=-1)
+            print(x.shape)
+            x = rearrange(x, 'B T D -> B D T')
+            x = self.generator.mel_decoder(x)
 
             audio = self.hifi_gan.decode_batch(x.cpu())
  
@@ -170,9 +170,9 @@ class Mega2(nn.Module):
 
     def forward(
             self,
-            wavs_dir: str,
-            text: str,
-            ref_wav: str
+            ref_wavs: str,  # 给mrte用 
+            text: str,      # target text
+            ref_wav: str    # prompt
     ):
         mels_prompt = None
 
