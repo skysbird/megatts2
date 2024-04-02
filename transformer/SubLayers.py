@@ -3,7 +3,6 @@ import torch.nn.functional as F
 import numpy as np
 
 from transformer.Modules import ScaledDotProductAttention
-import hparams as hp
 
 
 class MultiHeadAttention(nn.Module):
@@ -75,13 +74,17 @@ class PositionwiseFeedForward(nn.Module):
     def __init__(self, d_in, d_hid, dropout=0.1):
         super().__init__()
 
+        #hp
+        fft_conv1d_kernel = (9, 1)
+        fft_conv1d_padding = (4, 0)
+        
         # Use Conv1D
         # position-wise
         self.w_1 = nn.Conv1d(
-            d_in, d_hid, kernel_size=hp.fft_conv1d_kernel[0], padding=hp.fft_conv1d_padding[0])
+            d_in, d_hid, kernel_size=fft_conv1d_kernel[0], padding=fft_conv1d_padding[0])
         # position-wise
         self.w_2 = nn.Conv1d(
-            d_hid, d_in, kernel_size=hp.fft_conv1d_kernel[1], padding=hp.fft_conv1d_padding[1])
+            d_hid, d_in, kernel_size=fft_conv1d_kernel[1], padding=fft_conv1d_padding[1])
 
         self.layer_norm = nn.LayerNorm(d_in)
         self.dropout = nn.Dropout(dropout)
