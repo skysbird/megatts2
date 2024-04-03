@@ -79,11 +79,19 @@ class MegaGANTrainer(pl.LightningModule):
 
     def forward(self, batch: dict):
         # forward(self, duration_tokens, text, ref_audio, ref_audios):
+        #     def forward(self, src_seq, src_pos, mel_pos=None, mel_max_length=None, length_target=None, alpha=1.0):
 
-        y_hat = self.G(
-            phonemes=batch["phone_tokens"],
-            duration_tokens=batch["duration_tokens"],
-        )
+        character = batch["text"].long()
+        duration = batch["duration"].int()
+        mel_pos = batch["mel_pos"].long()
+        src_pos = batch["src_pos"].long()
+        max_mel_len = batch["mel_max_len"]
+        
+        y_hat = self.G(character,
+                        src_pos,
+                        mel_pos=mel_pos,
+                        mel_max_length=max_mel_len,
+                        length_target=duration)
 
         return y_hat
 
@@ -96,7 +104,7 @@ class MegaGANTrainer(pl.LightningModule):
             y_hat = self(batch)
 
             # Train discriminator
-            y = batch["mel_targets"]
+            y = batch["mel_target"]
             D_outputs = self.D(y)
             D_loss_real = 0.5 * torch.mean((D_outputs["y"] - 1) ** 2)
 

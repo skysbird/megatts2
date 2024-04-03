@@ -431,6 +431,118 @@ class TTSDataModule(pl.LightningDataModule):
 
     def test_dataloader(self) -> DataLoader:
         return None
+    
+
+
+class TTSDataModule2(pl.LightningDataModule):
+    def __init__(
+            self,
+            ds_path: str = 'data',
+            max_duration_batch: float = 80,
+            min_duration: float = 1.5,
+            max_duration: float = 20,
+            max_n_cuts: int = 3,
+            num_buckets: int = 2,
+            num_workers: int = 4,
+            dataset: str = 'TTSDataset',
+            **kwargs
+    ) -> None:
+        super().__init__()
+        self.save_hyperparameters(ignore=['class_path'])
+
+    def setup(self, stage: str = None) -> None:
+
+        def filter_duration(c):
+            if c.duration < self.hparams.min_duration or c.duration > self.hparams.max_duration:
+                return False
+            return True
+
+        seed = random.randint(0, 100000)
+        cs_train = load_manifest(f'{self.hparams.ds_path}/cuts_train.jsonl.gz')
+        cs_train = cs_train.filter(filter_duration)
+
+        if not self.hparams.dataset == 'MegaADMDataset':
+            spk2cuts = make_spk_cutset(cs_train)
+
+        if self.hparams.dataset == 'TTSDataset' or self.hparams.dataset == 'MegaADMDataset':
+            if self.hparams.dataset == 'TTSDataset':
+                dataset = TTSDataset2(spk2cuts, self.hparams.ds_path, 10)
+            else:
+                dataset = MegaADMDataset(self.hparams.ds_path)
+
+            sampler = DynamicBucketingSampler(
+                cs_train,
+                max_duration=self.hparams.max_duration_batch,
+                shuffle=True,
+                num_buckets=self.hparams.num_buckets,
+                drop_last=False,
+                seed=seed,
+            )
+        elif self.hparams.dataset == 'MegaPLMDataset':
+            lr = LengthRegulator(
+                HIFIGAN_HOP_LENGTH, 16000, (HIFIGAN_HOP_LENGTH / HIFIGAN_SR * 1000))
+            dataset = MegaPLMDataset(
+                spk2cuts, self.hparams.ds_path, lr, 10, 1024)
+
+            sampler = SimpleCutSampler(
+                cs_train,
+                max_cuts=self.hparams.max_n_cuts,
+                shuffle=True,
+                drop_last=False,
+                seed=seed,
+            )
+        else:
+            raise ValueError(f'Unsupported dataset: {self.hparams.dataset}')
+
+        self.train_dl = DataLoader(
+            dataset,
+            batch_size=None,
+            num_workers=self.hparams.num_workers,
+            pin_memory=True,
+            sampler=sampler,
+        )
+
+        cs_valid = load_manifest(f'{self.hparams.ds_path}/cuts_valid.jsonl.gz')
+        cs_valid = cs_valid.filter(filter_duration)
+
+        if not self.hparams.dataset == 'MegaADMDataset':
+            spk2cuts = make_spk_cutset(cs_valid)
+
+        if self.hparams.dataset == 'TTSDataset' or self.hparams.dataset == 'MegaADMDataset':
+            sampler = DynamicBucketingSampler(
+                cs_valid,
+                max_duration=self.hparams.max_duration_batch,
+                shuffle=True,
+                num_buckets=self.hparams.num_buckets,
+                drop_last=False,
+                seed=seed,
+            )
+        elif self.hparams.dataset == 'MegaPLMDataset':
+            sampler = SimpleCutSampler(
+                cs_valid,
+                max_cuts=self.hparams.max_n_cuts,
+                shuffle=True,
+                drop_last=False,
+                seed=seed,
+            )
+        else:
+            raise ValueError(f'Unsupported dataset: {self.hparams.dataset}')
+
+        self.valid_dl = DataLoader(
+            dataset,
+            batch_size=None,
+            num_workers=self.hparams.num_workers,
+            sampler=sampler,
+        )
+
+    def train_dataloader(self) -> DataLoader:
+        return self.train_dl
+
+    def val_dataloader(self) -> DataLoader:
+        return self.valid_dl
+
+    def test_dataloader(self) -> DataLoader:
+        return None
 
 
 def test():
@@ -504,3 +616,100 @@ def test():
         # print(batch['tc_latents'].shape)
         # print(batch['lens'].shape)
 
+
+
+class TTSDataset2(torch.utils.data.Dataset):
+    def __init__(
+            self,
+            spk2cuts: Dict,
+            ds_path: str,
+            n_same_spk_samples: int = 10
+    ):
+        super().__init__()
+        self.tokens_collector = TokensCollector(
+            f'{ds_path}/unique_text_tokens.k2symbols')
+        self.spk2cuts = spk2cuts
+        self.n_same_spk_samples = n_same_spk_samples
+
+    def __getitem__(self, cuts: CutSet) -> Dict:
+        phone_tokens, duration_tokens, tokens_lens = self.tokens_collector(
+            cuts)
+        mel_targets, mel_target_lens = collate_features(
+            cuts,
+            executor=_get_executor(8, executor_type=ThreadPoolExecutor),)
+
+        # align duration token and mel_target_lens
+        for i in range(mel_target_lens.shape[0]):
+            sum_duration = torch.sum(duration_tokens[i])
+            assert sum_duration <= mel_target_lens[i]
+            if sum_duration < mel_target_lens[i]:
+                mel_target_lens[i] = sum_duration
+
+        max_len = max(mel_target_lens)
+        mel_targets = mel_targets[:, :max_len, :]
+
+        mel_timbres_list = []
+        mel_timbre_lens_list = []
+        n_sample = random.randint(2, self.n_same_spk_samples)
+        for cut in cuts:
+            same_spk_cuts = self.spk2cuts[cut.supervisions[0].speaker]
+            same_spk_cuts = same_spk_cuts.sample(
+                n_cuts=min(n_sample, len(same_spk_cuts)))
+            if type(same_spk_cuts)!= CutSet:
+              print(type(same_spk_cuts))
+              print(same_spk_cuts)
+              print(cut.supervisions[0].speaker)
+              same_spk_cuts = [same_spk_cuts]
+              
+            mel_timbres_same_spk, mel_timbre_lens_same_spk = collate_features(
+                same_spk_cuts,
+                executor=_get_executor(8, executor_type=ThreadPoolExecutor),)
+
+            mel_timbre = mel_timbres_same_spk[0, :mel_timbre_lens_same_spk[0]]
+            for i in range(1, mel_timbres_same_spk.shape[0]):
+                mel_timbre = torch.cat(
+                    [mel_timbre, mel_timbres_same_spk[i, :mel_timbre_lens_same_spk[i]]], dim=0)
+            mel_timbres_list.append(mel_timbre)
+            mel_timbre_lens_list.append(mel_timbre.shape[0])
+
+        mel_timbres_list_cutted = []
+        min_mel_timbres_len = min(mel_timbre_lens_list)
+        for mel_timbre in mel_timbres_list:
+            mel_timbres_list_cutted.append(mel_timbre[:min_mel_timbres_len, :])
+
+        mel_timbres = torch.stack(mel_timbres_list_cutted).type(torch.float32)
+
+
+        length_mel = np.array(list())
+        for mel in mel_targets:
+            length_mel = np.append(length_mel, mel.size(0))
+
+        mel_pos = list()
+        max_mel_len = int(max(length_mel))
+        for length_mel_row in length_mel:
+            mel_pos.append(np.pad([i+1 for i in range(int(length_mel_row))],
+                                (0, max_mel_len-int(length_mel_row)), 'constant'))
+        mel_pos = torch.from_numpy(np.array(mel_pos))
+
+
+        length_text = np.array([])
+        for text in phone_tokens:
+            length_text = np.append(length_text, text.size(0))
+
+        src_pos = list()
+        max_len = int(max(length_text))
+        for length_src_row in length_text:
+            src_pos.append(np.pad([i+1 for i in range(int(length_src_row))],
+                                (0, max_len-int(length_src_row)), 'constant'))
+        src_pos = torch.from_numpy(np.array(src_pos))
+
+        batch = {
+            "text":  phone_tokens,
+            "mel_target": mel_targets,  #
+            "duration": duration_tokens,
+            "mel_pos": mel_pos,
+            "src_pos": src_pos,
+            "mel_max_len": max_mel_len
+        }
+
+        return batch
