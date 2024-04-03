@@ -22,6 +22,20 @@ from speechbrain.pretrained import HIFIGAN
 
 from torchmetrics.classification import MulticlassAccuracy
 
+class DNNLoss(nn.Module):
+    def __init__(self):
+        super(DNNLoss, self).__init__()
+        self.mse_loss = F.mse_loss
+        self.l1_loss = F.l1_loss
+
+    def forward(self, mel, mel_postnet,  mel_target):
+        mel_target.requires_grad = False
+        mel_loss = self.mse_loss(mel, mel_target)
+        mel_postnet_loss = self.mse_loss(mel_postnet, mel_target)
+
+
+        return mel_loss, mel_postnet_loss
+    
 class MegaGANTrainer(pl.LightningModule):
     def __init__(
             self,
@@ -44,6 +58,8 @@ class MegaGANTrainer(pl.LightningModule):
         self.D = D
         self.validation_step_outputs = []
         self.train_step_outputs = []
+        self.dnn_loss = DNNLoss()
+
 
         if self.hparams.train_dtype == "float32":
             self.train_dtype = torch.float32
@@ -119,9 +135,9 @@ class MegaGANTrainer(pl.LightningModule):
             #sch1.step()
 
             # Train generator
-            G_loss_total = F.mse_loss(y_hat,y)
+            loss, loss_p = self.dnn_loss(y_hat,y_hat_p, y)
 
-            #G_loss = G_loss_re 
+            G_loss_total = loss + loss_p 
 
             #G_loss_adv = 0.5 * torch.mean((self.D(y_hat)["y"] - 1) ** 2)
             #G_loss_total = G_loss
@@ -166,12 +182,12 @@ class MegaGANTrainer(pl.LightningModule):
 
         # print(y.shape)
         # print(y_hat.shape)
-        loss_re = F.mse_loss(y_hat,y)
+        loss, loss_p = self.dnn_loss(y_hat,y_hat_p, y)
 
         self.validation_step_outputs.append({
             "y": y[0],
             "y_hat": y_hat[0],
-            "loss_re": loss_re,
+            "loss_re": loss_p,
         })
 
     def on_validation_epoch_end(self):
