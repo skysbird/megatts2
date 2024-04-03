@@ -87,13 +87,13 @@ class MegaGANTrainer(pl.LightningModule):
         src_pos = batch["src_pos"].long()
         max_mel_len = batch["mel_max_len"]
         
-        y_hat = self.G(character,
+        y_hat,y_hat_p = self.G(character,
                         src_pos,
                         mel_pos=mel_pos,
                         mel_max_length=max_mel_len,
                         length_target=duration)
 
-        return y_hat
+        return y_hat,y_hat_p
 
     def training_step(self, batch: dict, batch_idx, **kwargs):
         opt1, opt2 = self.optimizers()
@@ -101,7 +101,7 @@ class MegaGANTrainer(pl.LightningModule):
 
         with torch.cuda.amp.autocast(dtype=self.train_dtype):
             self.G.train()
-            y_hat = self(batch)
+            y_hat,y_hat_p = self(batch)
 
             # Train discriminator
             y = batch["mel_target"]
@@ -162,7 +162,7 @@ class MegaGANTrainer(pl.LightningModule):
         y = batch["mel_targets"]
         with torch.no_grad():
             self.G.eval()
-            y_hat = self(batch)
+            y_hat,y_hat_p = self(batch)
 
         # print(y.shape)
         # print(y_hat.shape)

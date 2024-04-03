@@ -21,6 +21,7 @@ from new_modules.mrte2 import LengthRegulator
 from transformer.Models import Encoder,Decoder
 import hparams as hp
 from transformer.Layers import Linear, PostNet
+from .modules import  CBHG
 
 
 class GANDiscriminator(nn.Module):
@@ -48,6 +49,11 @@ class VQGANTTS(nn.Module):
         self.length_regulator = LengthRegulator()
         self.mel_linear = Linear(hp.decoder_dim, hp.num_mels)
 
+        self.postnet = CBHG(hp.num_mels, K=8,
+                            projections=[256, hp.num_mels])
+        self.last_linear = Linear(hp.num_mels * 2, hp.num_mels)
+        
+
     def mask_tensor(self, mel_output, position, mel_max_length):
         lengths = torch.max(position, -1)[0]
         mask = get_mask_from_lengths(lengths, max_len=mel_max_length)
@@ -72,6 +78,12 @@ class VQGANTTS(nn.Module):
         mel_output = self.mel_linear(decoder_output)
         mel_output = self.mask_tensor(mel_output, mel_pos, mel_max_length)
 
+        residual = self.postnet(mel_output)
+        residual = self.last_linear(residual)
+        mel_postnet_output = mel_output + residual
+        mel_postnet_output = self.mask_tensor(mel_postnet_output,
+                                                mel_pos,
+                                                mel_max_length)
         # residual = self.postnet(mel_output)
         # residual = self.last_linear(residual)
         # mel_postnet_output = mel_output + residual
@@ -80,7 +92,7 @@ class VQGANTTS(nn.Module):
         #                                           mel_max_length)
         
        
-        return mel_output
+        return mel_output, mel_postnet_output
 
     def discriminate(self, mel):
         # GAN Discriminator forward pass
