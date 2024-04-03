@@ -74,6 +74,26 @@ def get_attn_key_pad_mask(seq_k, seq_q):
     return padding_mask
 
 
+def get_sinusoid_encoding_table(n_position, d_hid, padding_idx=None):
+    ''' Sinusoid position encoding table '''
+
+    def cal_angle(position, hid_idx):
+        return position / np.power(10000, 2 * (hid_idx // 2) / d_hid)
+
+    def get_posi_angle_vec(position):
+        return [cal_angle(position, hid_j) for hid_j in range(d_hid)]
+
+    sinusoid_table = np.array([get_posi_angle_vec(pos_i)
+                               for pos_i in range(n_position)])
+
+    sinusoid_table[:, 0::2] = np.sin(sinusoid_table[:, 0::2])  # dim 2i
+    sinusoid_table[:, 1::2] = np.cos(sinusoid_table[:, 1::2])  # dim 2i+1
+
+    if padding_idx is not None:
+        # zero vector for padding dimension
+        sinusoid_table[padding_idx] = 0.
+
+    return torch.FloatTensor(sinusoid_table)
 
 class Encoder(nn.Module):
     ''' Encoder '''
@@ -98,10 +118,14 @@ class Encoder(nn.Module):
                                          d_word_vec,
                                          padding_idx=Constants.PAD)
 
-        self.position_enc = SinePositionalEmbedding(
-            dim_model=d_model,
-            dropout=dropout,
-        )
+        # self.position_enc = SinePositionalEmbedding(
+        #     dim_model=d_model,
+        #     dropout=dropout,
+        # )
+
+        self.position_enc = nn.Embedding.from_pretrained(
+            get_sinusoid_encoding_table(n_position, d_word_vec, padding_idx=0),
+            freeze=True)
 
         self.layer_stack = nn.ModuleList([FFTBlock(
             d_model, d_inner, n_head, d_k, d_v, dropout=dropout) for _ in range(n_layers)])
