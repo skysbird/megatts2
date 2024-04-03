@@ -18,38 +18,66 @@ from modules.vqpe import VQProsodyEncoder
 import yaml
 from utils.utils import instantiate_class
 from new_modules.mrte2 import LengthRegulator
+from transformer.Models import Encoder,Decoder
+import hparams as hp
+from transformer.Layers import Linear, PostNet
+
 
 class GANDiscriminator(nn.Module):
     # Placeholder for the actual GAN Discriminator implementation
     pass
 
 
+def get_mask_from_lengths(lengths, max_len=None):
+    if max_len == None:
+        max_len = torch.max(lengths).item()
+
+    ids = torch.arange(0, max_len, out=torch.cuda.LongTensor(max_len))
+    mask = (ids < lengths.unsqueeze(1)).bool()
+
+    return mask
+
 class VQGANTTS(nn.Module):
     def __init__(self,
-                 content_encoder: ContentEncoder2,
-                 mel_decoder: ConvNet
+                 content_encoder: Encoder,
+                 mel_decoder: Decoder
     ):
         super(VQGANTTS, self).__init__()
         self.content_encoder = content_encoder # ContentEncoder()
         self.mel_decoder = mel_decoder # MelDecoder(first_channel=512 + 512, last_channel = 80) #vq and mrte dim
         self.length_regulator = LengthRegulator()
+        self.mel_linear = Linear(hp.decoder_dim, hp.num_mels)
 
+    def mask_tensor(self, mel_output, position, mel_max_length):
+        lengths = torch.max(position, -1)[0]
+        mask = get_mask_from_lengths(lengths, max_len=mel_max_length)
+        mask = mask.unsqueeze(-1).expand(-1, -1, mel_output.size(-1))
+        return mel_output.masked_fill(mask, 0.)
     
-    def forward(self, 
-                phonemes:torch.Tensor, #(B, T)
-                duration_tokens: torch.Tensor #(B,)
-                ):
+    # def forward(self, 
+    #             phonemes:torch.Tensor, #(B, T)
+    #             duration_tokens: torch.Tensor #(B,)
+    #             ):
+    def forward(self, src_seq, src_pos, mel_pos=None, mel_max_length=None, length_target=None, alpha=1.0):
+
         # Content Encoder forward pass
-        content_features = self.content_encoder(phonemes)
+        # self.content_encoder.forward(src_seq, src_seq)
+        content_features = self.content_encoder(src_seq, src_pos)
         
         #上采样
-        regulated_output = self.length_regulator(content_features, duration_tokens)  # [ T*target_length, B,mel_dim]
+        length_regulator_output = self.length_regulator(content_features, length_target, mel_max_length)  # [ T*target_length, B,mel_dim]
 
-        x = regulated_output.permute(0,2,1)
+        decoder_output = self.mel_decoder(length_regulator_output, mel_pos)
 
-        mel_output = self.mel_decoder(x)
+        mel_output = self.mel_linear(decoder_output)
+        mel_output = self.mask_tensor(mel_output, mel_pos, mel_max_length)
 
-        mel_output = mel_output.permute(0,2,1)
+        # residual = self.postnet(mel_output)
+        # residual = self.last_linear(residual)
+        # mel_postnet_output = mel_output + residual
+        # mel_postnet_output = self.mask_tensor(mel_postnet_output,
+        #                                           mel_pos,
+        #                                           mel_max_length)
         
        
         return mel_output
