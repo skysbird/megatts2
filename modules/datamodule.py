@@ -25,7 +25,7 @@ import numpy as np
 from modules.mrte import LengthRegulator
 
 from .tokenizer import HIFIGAN_SR, HIFIGAN_HOP_LENGTH
-
+from .dataset import BufferDataset,get_data_to_buffer,collate_fn_tensor
 
 class TokensCollector():
     def __init__(self, symbols_table: str) -> None:
@@ -452,88 +452,30 @@ class TTSDataModule2(pl.LightningDataModule):
 
     def setup(self, stage: str = None) -> None:
 
-        def filter_duration(c):
-            if c.duration < self.hparams.min_duration or c.duration > self.hparams.max_duration:
-                return False
-            return True
+        buffer = get_data_to_buffer()
 
-        seed = random.randint(0, 100000)
-        cs_train = load_manifest(f'{self.hparams.ds_path}/cuts_train.jsonl.gz')
-        cs_train = cs_train.filter(filter_duration)
+        dataset = BufferDataset(buffer)
 
-        if not self.hparams.dataset == 'MegaADMDataset':
-            spk2cuts = make_spk_cutset(cs_train)
-
-        if self.hparams.dataset == 'TTSDataset' or self.hparams.dataset == 'MegaADMDataset':
-            if self.hparams.dataset == 'TTSDataset':
-                dataset = TTSDataset2(spk2cuts, self.hparams.ds_path, 10)
-            else:
-                dataset = MegaADMDataset(self.hparams.ds_path)
-
-            sampler = DynamicBucketingSampler(
-                cs_train,
-                max_duration=self.hparams.max_duration_batch,
-                shuffle=True,
-                num_buckets=self.hparams.num_buckets,
-                drop_last=False,
-                seed=seed,
-            )
-        elif self.hparams.dataset == 'MegaPLMDataset':
-            lr = LengthRegulator(
-                HIFIGAN_HOP_LENGTH, 16000, (HIFIGAN_HOP_LENGTH / HIFIGAN_SR * 1000))
-            dataset = MegaPLMDataset(
-                spk2cuts, self.hparams.ds_path, lr, 10, 1024)
-
-            sampler = SimpleCutSampler(
-                cs_train,
-                max_cuts=self.hparams.max_n_cuts,
-                shuffle=True,
-                drop_last=False,
-                seed=seed,
-            )
-        else:
-            raise ValueError(f'Unsupported dataset: {self.hparams.dataset}')
-
-        self.train_dl = DataLoader(
-            dataset,
-            batch_size=None,
-            num_workers=self.hparams.num_workers,
-            pin_memory=True,
-            sampler=sampler,
-        )
-
-        cs_valid = load_manifest(f'{self.hparams.ds_path}/cuts_valid.jsonl.gz')
-        cs_valid = cs_valid.filter(filter_duration)
-
-        if not self.hparams.dataset == 'MegaADMDataset':
-            spk2cuts = make_spk_cutset(cs_valid)
-
-        if self.hparams.dataset == 'TTSDataset' or self.hparams.dataset == 'MegaADMDataset':
-            sampler = DynamicBucketingSampler(
-                cs_valid,
-                max_duration=self.hparams.max_duration_batch,
-                shuffle=True,
-                num_buckets=self.hparams.num_buckets,
-                drop_last=False,
-                seed=seed,
-            )
-        elif self.hparams.dataset == 'MegaPLMDataset':
-            sampler = SimpleCutSampler(
-                cs_valid,
-                max_cuts=self.hparams.max_n_cuts,
-                shuffle=True,
-                drop_last=False,
-                seed=seed,
-            )
-        else:
-            raise ValueError(f'Unsupported dataset: {self.hparams.dataset}')
-
-        self.valid_dl = DataLoader(
-            dataset,
-            batch_size=None,
-            num_workers=self.hparams.num_workers,
-            sampler=sampler,
-        )
+        # Get Training Loader
+        self.train_dl = DataLoader(dataset,
+                                    batch_size=100,
+                                    shuffle=True,
+                                    collate_fn=collate_fn_tensor,
+                                    drop_last=True,
+                                    num_workers=0)
+        
+        self.valid_dl = DataLoader(dataset[:100],
+                                    batch_size=100,
+                                    shuffle=True,
+                                    collate_fn=collate_fn_tensor,
+                                    drop_last=True,
+                                    num_workers=0)
+        # self.valid_dl = DataLoader(
+        #     dataset,
+        #     batch_size=None,
+        #     num_workers=self.hparams.num_workers,
+        #     sampler=sampler,
+        # )
 
     def train_dataloader(self) -> DataLoader:
         return self.train_dl
