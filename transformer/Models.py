@@ -169,10 +169,14 @@ class Decoder(nn.Module):
 
         n_position = len_max_seq + 1
 
-        self.position_enc = SinePositionalEmbedding(
-            dim_model=d_model,
-            dropout=dropout,
-        )
+        # self.position_enc = SinePositionalEmbedding(
+        #     dim_model=d_model,
+        #     dropout=dropout,
+        # )
+
+        self.position_enc = nn.Embedding.from_pretrained(
+            get_sinusoid_encoding_table(n_position, d_model, padding_idx=0),
+            freeze=True)
 
         self.layer_stack = nn.ModuleList([FFTBlock(
             d_model, d_inner, n_head, d_k, d_v, dropout=dropout) for _ in range(n_layers)])
