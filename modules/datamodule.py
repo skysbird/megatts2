@@ -458,14 +458,14 @@ class TTSDataModule2(pl.LightningDataModule):
 
         # Get Training Loader
         self.train_dl = DataLoader(dataset,
-                                    batch_size=100,
+                                    batch_size=1,
                                     shuffle=True,
                                     collate_fn=collate_fn_tensor,
                                     drop_last=True,
                                     num_workers=0)
         
         self.valid_dl = DataLoader(dataset[:100],
-                                    batch_size=100,
+                                    batch_size=1,
                                     shuffle=True,
                                     collate_fn=collate_fn_tensor,
                                     drop_last=True,

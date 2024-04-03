@@ -38,17 +38,9 @@ model:
     class_path: models.gan2.VQGANTTS
     init_args:
       content_encoder:
-        class_path: new_modules.content_encoder2.ContentEncoder2
+        class_path: transformer.Models.Encoder
       mel_decoder:
-        class_path: modules.convnet.ConvNet
-        init_args:
-          in_channels: 512 # 512 + 512
-          out_channels: 80
-          n_stacks: 4
-          n_blocks: 2
-          hidden_size: 512
-          kernel_size: 5
-          activation: 'ReLU'
+        class_path: transformer.Models.Decoder
   D:
     class_path: modules.dscrm.Discriminator
     init_args:
@@ -68,8 +60,8 @@ model:
   G_commit_loss_coeff: 0.15
   G_vq_loss_coeff: 0.05
   G_adv_loss_coeff: 1.0
-  train_dtype: bfloat16
-  class_path: models.trainer.MegaGANTrainer
+  train_dtype: float32
+  class_path: trainer.trainer2.MegaGANTrainer
 data:
   ds_path: /data/sky/data/ds/
   max_duration_batch: 60
@@ -77,5 +69,5 @@ data:
   max_duration: 20
   num_buckets: 10
   num_workers: 4
-  class_path: modules.datamodule.TTSDataModule
+  class_path: modules.datamodule.TTSDataModule2
 ckpt_path: null

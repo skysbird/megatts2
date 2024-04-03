@@ -29,7 +29,7 @@ logger_path = "./logger"
 mel_ground_truth = "./mels"
 alignment_path = "./alignments"
 
-batch_size = 32
+batch_size = 1
 epochs = 2000
 n_warm_up_step = 4000
 
@@ -42,4 +42,4 @@ save_step = 3000
 log_step = 5
 clear_Time = 20
 
-batch_expand_size = 32
+batch_expand_size = 1
