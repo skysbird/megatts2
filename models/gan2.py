@@ -62,7 +62,7 @@ class VQGANTTS(nn.Module):
 
         # Content Encoder forward pass
         # self.content_encoder.forward(src_seq, src_seq)
-        content_features = self.content_encoder(src_seq, src_pos)
+        content_features,_ = self.content_encoder(src_seq, src_pos)
         
         #上采样
         length_regulator_output = self.length_regulator(content_features, length_target, mel_max_length)  # [ T*target_length, B,mel_dim]

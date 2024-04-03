@@ -52,41 +52,41 @@ class MegaGANTrainer(pl.LightningModule):
             print("Using bfloat16")
 
     def configure_optimizers(self):
-        D_params = [
-            {"params": self.D.parameters()}
-        ]
+        #D_params = [
+        #    {"params": self.D.parameters()}
+        #]
         G_params = [
             {"params": self.G.parameters()}
         ]
 
-        D_opt = torch.optim.AdamW(
-            D_params, lr=self.hparams.initial_learning_rate)
+        #D_opt = torch.optim.AdamW(
+        #    D_params, lr=self.hparams.initial_learning_rate)
         G_opt = torch.optim.AdamW(
             G_params, lr=self.hparams.initial_learning_rate)
 
-        D_sch = transformers.get_cosine_schedule_with_warmup(
-            D_opt, num_warmup_steps=self.hparams.warmup_steps, num_training_steps=self.trainer.max_steps // 2
-        )
+        #D_sch = transformers.get_cosine_schedule_with_warmup(
+        #    D_opt, num_warmup_steps=self.hparams.warmup_steps, num_training_steps=self.trainer.max_steps // 2
+        #)
         G_sch = transformers.get_cosine_schedule_with_warmup(
             G_opt, num_warmup_steps=self.hparams.warmup_steps, num_training_steps=self.trainer.max_steps // 2
         )
 
         return (
-            [D_opt, G_opt],
-            [{"scheduler": D_sch, "interval": "step"}, {
+            [G_opt],
+            [ {
                 "scheduler": G_sch, "interval": "step"}],
         )
 
     def forward(self, batch: dict):
         # forward(self, duration_tokens, text, ref_audio, ref_audios):
         #     def forward(self, src_seq, src_pos, mel_pos=None, mel_max_length=None, length_target=None, alpha=1.0):
-
         character = batch["text"].long()
         duration = batch["duration"].int()
         mel_pos = batch["mel_pos"].long()
         src_pos = batch["src_pos"].long()
         max_mel_len = batch["mel_max_len"]
-        
+       
+
         y_hat = self.G(character,
                         src_pos,
                         mel_pos=mel_pos,
@@ -96,35 +96,36 @@ class MegaGANTrainer(pl.LightningModule):
         return y_hat
 
     def training_step(self, batch: dict, batch_idx, **kwargs):
-        opt1, opt2 = self.optimizers()
-        sch1, sch2 = self.lr_schedulers()
-
+        opt2 = self.optimizers()
+        sch2 = self.lr_schedulers()
+        batch = batch[0]
         with torch.cuda.amp.autocast(dtype=self.train_dtype):
             self.G.train()
             y_hat = self(batch)
 
+            #print(y_hat.shape)
             # Train discriminator
             y = batch["mel_target"]
-            D_outputs = self.D(y)
-            D_loss_real = 0.5 * torch.mean((D_outputs["y"] - 1) ** 2)
+            #D_outputs = self.D(y)
+            #D_loss_real = 0.5 * torch.mean((D_outputs["y"] - 1) ** 2)
 
-            D_outputs = self.D(y_hat.detach())
-            D_loss_fake = 0.5 * torch.mean(D_outputs["y"] ** 2)
+            #D_outputs = self.D(y_hat.detach())
+            #D_loss_fake = 0.5 * torch.mean(D_outputs["y"] ** 2)
 
-            D_loss_total = D_loss_real + D_loss_fake
+            #D_loss_total = D_loss_real + D_loss_fake
 
-            opt1.zero_grad()
-            self.manual_backward(D_loss_total)
-            opt1.step()
-            sch1.step()
+            #opt1.zero_grad()
+            #self.manual_backward(D_loss_total)
+            #opt1.step()
+            #sch1.step()
 
             # Train generator
-            G_loss_re = F.l1_loss(y, y_hat)
+            G_loss_total = F.mse_loss(y_hat,y)
 
-            G_loss = G_loss_re 
+            #G_loss = G_loss_re 
 
-            G_loss_adv = 0.5 * torch.mean((self.D(y_hat)["y"] - 1) ** 2)
-            G_loss_total = G_loss_adv * self.hparams.G_adv_loss_coeff + G_loss
+            #G_loss_adv = 0.5 * torch.mean((self.D(y_hat)["y"] - 1) ** 2)
+            #G_loss_total = G_loss
 
             opt2.zero_grad()
             self.manual_backward(G_loss_total)
@@ -132,16 +133,16 @@ class MegaGANTrainer(pl.LightningModule):
             sch2.step()
 
         if batch_idx % 5 == 0:
-            self.log("train/D_loss_total", D_loss_total, prog_bar=True)
-            self.log("train/D_loss_real", D_loss_real)
-            self.log("train/D_loss_fake", D_loss_fake)
+            #self.log("train/D_loss_total", D_loss_total, prog_bar=True)
+            #self.log("train/D_loss_real", D_loss_real)
+            #self.log("train/D_loss_fake", D_loss_fake)
 
             self.log("train/G_loss_total", G_loss_total, prog_bar=True)
-            self.log("train/G_loss_adv", G_loss_adv)
-            self.log("train/G_loss", G_loss)
+            #self.log("train/G_loss_adv", G_loss_adv)
+            #self.log("train/G_loss", G_loss)
             #self.log("train/G_loss_commit", G_loss_commit)
             # self.log("train/G_loss_vq", G_loss_vq)
-            self.log("train/G_loss_re", G_loss_re)
+            #self.log("train/G_loss_re", G_loss_re)
 
         # self.train_step_outputs.append({
         #     "y": y[0],
@@ -158,15 +159,15 @@ class MegaGANTrainer(pl.LightningModule):
         pass
 
     def validation_step(self, batch: torch.Tensor, **kwargs):
-
-        y = batch["mel_targets"]
+        batch = batch[0]
+        y = batch["mel_target"]
         with torch.no_grad():
             self.G.eval()
             y_hat = self(batch)
 
         # print(y.shape)
         # print(y_hat.shape)
-        loss_re = F.l1_loss(y, y_hat)
+        loss_re = F.mse_loss(y_hat,y)
 
         self.validation_step_outputs.append({
             "y": y[0],
