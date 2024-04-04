@@ -23,7 +23,7 @@ from utils.utils import plot_spectrogram_to_numpy
 from speechbrain.pretrained import HIFIGAN
 
 from torchmetrics.classification import MulticlassAccuracy
-from optimizer import ScheduledOptim
+from .optimizer import ScheduledOptim
 import hparams as hp
 
 class DNNLoss(nn.Module):
