@@ -3,6 +3,8 @@ import lightning.pytorch as pl
 import torch
 import torchaudio
 import torch.nn.functional as F
+import torch.nn as nn
+
 
 import transformers
 
@@ -79,8 +81,9 @@ class MegaGANTrainer(pl.LightningModule):
 
         #D_opt = torch.optim.AdamW(
         #    D_params, lr=self.hparams.initial_learning_rate)
-        G_opt = torch.optim.AdamW(
-            G_params, lr=self.hparams.initial_learning_rate)
+        G_opt = torch.optim.Adam(
+            G_params, lr=self.hparams.initial_learning_rate,betas=(0.9, 0.98),
+                                 eps=1e-9)
 
         #D_sch = transformers.get_cosine_schedule_with_warmup(
         #    D_opt, num_warmup_steps=self.hparams.warmup_steps, num_training_steps=self.trainer.max_steps // 2
@@ -146,7 +149,7 @@ class MegaGANTrainer(pl.LightningModule):
             # Train generator
             loss, loss_p = self.dnn_loss(y_hat,y_hat_p, y)
 
-            G_loss_total = loss + loss_p 
+            G_loss_total = loss_p 
 
             #G_loss_adv = 0.5 * torch.mean((self.D(y_hat)["y"] - 1) ** 2)
             #G_loss_total = G_loss
