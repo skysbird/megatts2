@@ -21,6 +21,8 @@ from utils.utils import plot_spectrogram_to_numpy
 from speechbrain.pretrained import HIFIGAN
 
 from torchmetrics.classification import MulticlassAccuracy
+from optimizer import ScheduledOptim
+import hparams as hp
 
 class DNNLoss(nn.Module):
     def __init__(self):
@@ -83,9 +85,14 @@ class MegaGANTrainer(pl.LightningModule):
         #D_sch = transformers.get_cosine_schedule_with_warmup(
         #    D_opt, num_warmup_steps=self.hparams.warmup_steps, num_training_steps=self.trainer.max_steps // 2
         #)
-        G_sch = transformers.get_cosine_schedule_with_warmup(
-            G_opt, num_warmup_steps=self.hparams.warmup_steps, num_training_steps=self.trainer.max_steps // 2
-        )
+        # G_sch = transformers.get_cosine_schedule_with_warmup(
+        #     G_opt, num_warmup_steps=self.hparams.warmup_steps, num_training_steps=self.trainer.max_steps // 2
+        # )
+
+        G_sch = ScheduledOptim(G_opt,
+                                     hp.decoder_dim,
+                                     hp.n_warm_up_step,
+                                     0)
 
         return (
             [G_opt],
@@ -116,6 +123,8 @@ class MegaGANTrainer(pl.LightningModule):
         batch = batch[0]
         with torch.cuda.amp.autocast(dtype=self.train_dtype):
             self.G.train()
+            sch2.zero_grad()
+
             y_hat,y_hat_p = self(batch)
 
             #print(y_hat.shape)
@@ -142,10 +151,9 @@ class MegaGANTrainer(pl.LightningModule):
             #G_loss_adv = 0.5 * torch.mean((self.D(y_hat)["y"] - 1) ** 2)
             #G_loss_total = G_loss
 
-            opt2.zero_grad()
             self.manual_backward(G_loss_total)
-            opt2.step()
-            sch2.step()
+            # opt2.step()
+            sch2.step_and_update_lr()
 
         if batch_idx % 5 == 0:
             #self.log("train/D_loss_total", D_loss_total, prog_bar=True)
