@@ -156,7 +156,7 @@ class MegaGANTrainer(pl.LightningModule):
 
             self.manual_backward(G_loss_total)
             # opt2.step()
-            sch2.step_and_update_lr()
+            sch2.step()
 
         if batch_idx % 5 == 0:
             #self.log("train/D_loss_total", D_loss_total, prog_bar=True)

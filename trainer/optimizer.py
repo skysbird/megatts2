@@ -1,7 +1,7 @@
 import numpy as np
+import torch
 
-
-class ScheduledOptim():
+class ScheduledOptim(torch.optim.lr_scheduler._LRScheduler):
     ''' A simple wrapper class for learning rate scheduling '''
 
     def __init__(self, optimizer, d_model, n_warmup_steps, current_steps):
@@ -15,7 +15,7 @@ class ScheduledOptim():
             param_group['lr'] = learning_rate_frozen
         self.optimizer.step()
 
-    def step_and_update_lr(self):
+    def step(self):
         self._update_learning_rate()
         self.optimizer.step()
 
