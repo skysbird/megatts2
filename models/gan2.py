@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from new_modules.content_encoder2 import FastSpeechContentEncoder
 from new_modules.mrte2 import MRTE2
-from new_modules.vq_prosody_encoder import VectorQuantizer,VQEncoder
+from new_modules.vq_prosody_encoder import VQProsodyEncoder
 from new_modules.mel_decoder import MelDecoder
 import sys
 from pathlib import Path
@@ -14,7 +14,6 @@ sys.path.append(str(Path(__file__).parent))
 from plm import PLMModel
 from adm import ADM
 from modules.convnet import ConvNet
-from modules.vqpe import VQProsodyEncoder
 import yaml
 from utils.utils import instantiate_class
 from new_modules.mrte2 import LengthRegulator
@@ -42,18 +41,15 @@ class VQGANTTS(nn.Module):
     def __init__(self,
                  content_encoder: FastSpeechContentEncoder,
                  mrte:MRTE2,
-                 vqpe: VQEncoder,
+                 vqpe: VQProsodyEncoder,
                  mel_decoder: ConvNet
     ):
         super(VQGANTTS, self).__init__()
         self.content_encoder = content_encoder # ContentEncoder()
         self.mel_decoder = mel_decoder # MelDecoder(first_channel=512 + 512, last_channel = 80) #vq and mrte dim
         self.length_regulator = LengthRegulator()
-        self.mel_linear = Linear(hp.decoder_dim, hp.num_mels)
-
-        self.postnet = CBHG(hp.num_mels, K=8,
-                            projections=[256, hp.num_mels])
-        self.last_linear = Linear(hp.num_mels * 2, hp.num_mels)
+        self.mrte = mrte
+        self.vqpe = vqpe
         
 
     def mask_tensor(self, mel_output, position, mel_max_length):
