@@ -77,11 +77,11 @@ class VQGANTTS(nn.Module):
 
 
         #上采样
-        length_regulator_output = self.length_regulator(content_features, duration_tokens)  # [ T*target_length, B,mel_dim]
+        mrte_features = self.length_regulator(content_features, duration_tokens)  # [ T*target_length, B,mel_dim]
 
 
         # ref_audio = ref_audio.permute(0,2,1)
-        prosody_features,loss, _, _ = self.vqpe(ref_audio)
+        prosody_features,loss, _,  = self.vqpe(ref_audio)
 
         x = torch.cat([mrte_features,prosody_features],dim=-1)
 
