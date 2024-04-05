@@ -117,6 +117,18 @@ class MRTE2(nn.Module):
             ) for i in range(num_layers)
         ])
 
+
+        self.last_conv_blocks = nn.ModuleList([
+            nn.Sequential(
+                nn.Conv1d(hidden_size, hidden_size, kernel_size, padding=kernel_size//2),
+                LayerNormChannels(hidden_size),
+                nn.GELU(),
+                nn.Conv1d(hidden_size, hidden_size, kernel_size, padding=kernel_size//2),
+                LayerNormChannels(hidden_size),
+                nn.GELU()
+            ) for i in range(num_layers)
+        ])
+
         downsample_factor = 16
         # 定义16倍下采样层
         self.downsample = nn.Conv1d(hidden_size, hidden_size, kernel_size=1, stride=downsample_factor)
@@ -146,7 +158,7 @@ class MRTE2(nn.Module):
         print(mel_encoded.shape)
 
         #卷
-        for conv_block in self.conv_blocks:
+        for conv_block in self.last_conv_blocks:
             mel_encoded = conv_block(mel_encoded)
 
 
