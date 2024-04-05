@@ -14,6 +14,7 @@ class VectorQuantizer(nn.Module):
 
     def forward(self, inputs):
         inputs = inputs.permute(0, 2, 1).contiguous()
+        print(inputs.shape)
         flat_inputs = inputs.view(-1, self.embedding_dim)
 
         # Calculate distances
