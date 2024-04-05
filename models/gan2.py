@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from new_modules.content_encoder2 import FastSpeechContentEncoder
 from new_modules.mrte2 import MRTE2
-# from new_modules.vq_prosody_encoder import VQProsodyEncoder
+from new_modules.vq_prosody_encoder import VectorQuantizer,VQEncoder
 from new_modules.mel_decoder import MelDecoder
 import sys
 from pathlib import Path
@@ -42,7 +42,7 @@ class VQGANTTS(nn.Module):
     def __init__(self,
                  content_encoder: FastSpeechContentEncoder,
                  mrte:MRTE2,
-                 vqpe: VQProsodyEncoder,
+                 vqpe: VQEncoder,
                  mel_decoder: ConvNet
     ):
         super(VQGANTTS, self).__init__()
