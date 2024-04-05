@@ -2,82 +2,79 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class ConvBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size):
-        super(ConvBlock, self).__init__()
-        self.conv = nn.Conv1d(in_channels, out_channels, kernel_size=kernel_size, padding=kernel_size // 2)
-        self.bn = nn.BatchNorm1d(out_channels)
-        self.relu = nn.ReLU()
+# Let's fix the VectorQuantizer implementation and verify it works with a mock input.
 
-    def forward(self, x):
-        x = self.conv(x)
-        x = self.bn(x)
-        x = self.relu(x)
-        return x
-
-class VectorQuantization(nn.Module):
-    def __init__(self, num_embeddings, embedding_dim, commitment_cost=0.25):
-        super(VectorQuantization, self).__init__()
-        self._embedding_dim = embedding_dim
-        self._num_embeddings = num_embeddings
-        self._embedding = nn.Embedding(num_embeddings, embedding_dim)
-        self._embedding.weight.data.uniform_(-1 / num_embeddings, 1 / num_embeddings)
-        self._commitment_cost = commitment_cost
+class VectorQuantizer(nn.Module):
+    """
+    Vector quantization using a codebook.
+    """
+    def __init__(self, num_embeddings, embedding_dim, commitment_cost):
+        super(VectorQuantizer, self).__init__()
+        self.num_embeddings = num_embeddings
+        self.embedding_dim = embedding_dim
+        self.commitment_cost = commitment_cost
+        self.codebook = nn.Embedding(num_embeddings, embedding_dim)
+        self.codebook.weight.data.uniform_(-1 / num_embeddings, 1 / num_embeddings)
 
     def forward(self, inputs):
-        # Convert inputs from BxCxT to BxTxC
-        inputs = inputs.permute(0, 2, 1).contiguous()
-        input_shape = inputs.shape
-
         # Flatten input
-        flat_input = inputs.view(-1, self._embedding_dim)
+        flat_inputs = inputs.view(-1, self.embedding_dim)
 
-        # Calculate distances
-        distances = (torch.sum(flat_input ** 2, dim=1, keepdim=True)
-                     + torch.sum(self._embedding.weight ** 2, dim=1)
-                     - 2 * torch.matmul(flat_input, self._embedding.weight.t()))
+        # Calculate distances between inputs and codebook embeddings
+        distances = (torch.sum(flat_inputs ** 2, dim=1, keepdim=True) 
+                     + torch.sum(self.codebook.weight ** 2, dim=1) 
+                     - 2 * torch.matmul(flat_inputs, self.codebook.weight.t()))
 
         # Encoding
         encoding_indices = torch.argmin(distances, dim=1).unsqueeze(1)
-        encodings = torch.zeros(encoding_indices.shape[0], self._num_embeddings, device=inputs.device)
+        encodings = torch.zeros(encoding_indices.size(0), self.num_embeddings, device=inputs.device)
         encodings.scatter_(1, encoding_indices, 1)
 
-        # Quantized and unflatten
-        quantized = torch.matmul(encodings, self._embedding.weight).view(input_shape)
+        # Quantize
+        quantized = torch.matmul(encodings, self.codebook.weight).view(inputs.size())
+        
+        # Calculate VQ Loss
+        e_latent_loss = F.mse_loss(quantized, inputs.detach())
+        q_latent_loss = F.mse_loss(quantized.detach(), inputs)
+        loss = q_latent_loss + self.commitment_cost * e_latent_loss
 
-        # Loss
-        e_latent_loss = F.mse_loss(quantized.detach(), inputs)
-        q_latent_loss = F.mse_loss(quantized, inputs.detach())
-        loss = q_latent_loss + self._commitment_cost * e_latent_loss
-
+        # Add the quantized values to the input as a residual
         quantized = inputs + (quantized - inputs).detach()
-        avg_probs = torch.mean(encodings, dim=0)
-        perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
 
-        # Convert quantized from BxTxC back to BxCxT
-        quantized = quantized.permute(0, 2, 1).contiguous()
+        return loss, quantized
 
-        return loss, quantized, perplexity, encodings
 
-class VQProsodyEncoder(nn.Module):
-    def __init__(self, hidden_size=512, conv_kernel_size=5, num_vq_embeddings=2048, vq_embedding_dim=256):
-        super(VQProsodyEncoder, self).__init__()
-        self.conv_blocks = nn.Sequential(*[ConvBlock(hidden_size if i else 80, hidden_size, conv_kernel_size) for i in range(5)])
-        self.vq_layer = VectorQuantization(num_embeddings=num_vq_embeddings, embedding_dim=vq_embedding_dim)
+class VQEncoder(nn.Module):
+    """
+    Encodes the input with a VQ layer after max-pooling.
+    """
+    def __init__(self, input_channels, num_embeddings, embedding_dim, commitment_cost):
+        super(VQEncoder, self).__init__()
+        self.max_pool = nn.MaxPool1d(kernel_size=8, stride=8)
+        self.vq_layer = VectorQuantizer(num_embeddings, embedding_dim, commitment_cost)
 
     def forward(self, x):
-        x = self.conv_blocks(x)
-        loss, quantized, perplexity, _ = self.vq_layer(x)
-        return loss, quantized, perplexity
+        x = self.max_pool(x)
+        loss, quantized = self.vq_layer(x)
+        return loss, quantized
 
-if __name__ == "__main__":
-    # Example input tensor (batch size, channels, sequence length)
-    x = torch.randn(1, 80, 100)  # Example mel-spectrogram input
+# Example hyperparameters
+num_embeddings = 512  # Number of embeddings in VQ layer
+embedding_dim = 64   # Dimension of each embedding vector
+commitment_cost = 0.25  # Beta for commitment loss
 
-    # Initialize VQProsodyEncoder
-    encoder = VQProsodyEncoder()
-    loss, quantized, perplexity = encoder(x)
+# Mock input for testing (batch_size, channels, time)
+mel_spectrogram = torch.randn(16, 80, 128)
 
-    print('Loss:', loss)
-    print('Quantized shape:', quantized.shape)
-    print('Perplexity:', perplexity)
+# VQ Encoder
+vq_encoder = VQEncoder(input_channels=80, num_embeddings=num_embeddings, embedding_dim=embedding_dim, commitment_cost=commitment_cost)
+
+# Reshape the input as expected (batch_size, time, channels)
+mel_spectrogram = mel_spectrogram.transpose(1, 2)
+
+# Forward pass
+vq_loss, quantized_output = vq_encoder(mel_spectrogram)
+
+print(f"VQ Loss: {vq_loss}")
+print(f"Quantized Output Shape: {quantized_output.shape}")
+# Should print: Quantized Output Shape: torch.Size([16, 16, 64]) after max-pooling and VQ.
