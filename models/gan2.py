@@ -81,7 +81,7 @@ class VQGANTTS(nn.Module):
 
 
         ref_audio = ref_audio.permute(0,2,1)
-        prosody_features,loss, _, _ = self.vq_prosody_encoder(ref_audio)
+        prosody_features,loss, _, _ = self.vqpe(ref_audio)
 
         x = torch.cat([mrte_features,prosody_features],dim=-1)
 
