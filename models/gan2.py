@@ -83,26 +83,18 @@ class VQGANTTS(nn.Module):
         #上采样
         length_regulator_output = self.length_regulator(content_features, duration_tokens)  # [ T*target_length, B,mel_dim]
 
-        decoder_output = self.mel_decoder(length_regulator_output, mel_pos)
 
-        mel_output = self.mel_linear(decoder_output)
-        mel_output = self.mask_tensor(mel_output, mel_pos, mel_max_length)
+        ref_audio = ref_audio.permute(0,2,1)
+        prosody_features,loss, _, _ = self.vq_prosody_encoder(ref_audio)
 
-        residual = self.postnet(mel_output)
-        residual = self.last_linear(residual)
-        mel_postnet_output = mel_output + residual
-        mel_postnet_output = self.mask_tensor(mel_postnet_output,
-                                                mel_pos,
-                                                mel_max_length)
-        # residual = self.postnet(mel_output)
-        # residual = self.last_linear(residual)
-        # mel_postnet_output = mel_output + residual
-        # mel_postnet_output = self.mask_tensor(mel_postnet_output,
-        #                                           mel_pos,
-        #                                           mel_max_length)
+        x = torch.cat([mrte_features,prosody_features],dim=-1)
+
+        x = x.permute(0,2,1)
+        mel_output = self.mel_decoder(x)
+        mel_output = mel_output.permute(0,2,1)
         
-       
-        return mel_output, mel_postnet_output
+        return mel_output,loss
+
 
     def discriminate(self, mel):
         # GAN Discriminator forward pass
