@@ -35,7 +35,7 @@ trainer:
   devices: [0]
 model:
   G:
-    class_path: models.gan.VQGANTTS
+    class_path: models.gan2.VQGANTTS
     init_args:
       content_encoder:
         class_path: new_modules.content_encoder.ContentEncoder

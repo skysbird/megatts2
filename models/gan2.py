@@ -2,9 +2,9 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from new_modules.content_encoder2 import ContentEncoder2
-from new_modules.mrte import MRTE
-# from new_modules.vq_prosody_encoder import VQProsodyEncoder
+from new_modules.content_encoder2 import FastSpeechContentEncoder
+from new_modules.mrte2 import MRTE2
+from new_modules.vq_prosody_encoder import VectorQuantizer,VQEncoder
 from new_modules.mel_decoder import MelDecoder
 import sys
 from pathlib import Path
@@ -40,8 +40,10 @@ def get_mask_from_lengths(lengths, max_len=None):
 
 class VQGANTTS(nn.Module):
     def __init__(self,
-                 content_encoder: Encoder,
-                 mel_decoder: Decoder
+                 content_encoder: FastSpeechContentEncoder,
+                 mrte:MRTE2,
+                 vqpe: VQEncoder,
+                 mel_decoder: ConvNet
     ):
         super(VQGANTTS, self).__init__()
         self.content_encoder = content_encoder # ContentEncoder()
@@ -64,35 +66,35 @@ class VQGANTTS(nn.Module):
     #             phonemes:torch.Tensor, #(B, T)
     #             duration_tokens: torch.Tensor #(B,)
     #             ):
-    def forward(self, src_seq, src_pos, mel_pos=None, mel_max_length=None, length_target=None, alpha=1.0):
+    # def forward(self, src_seq, src_pos, mel_pos=None, mel_max_length=None, length_target=None, alpha=1.0):
+    def forward(self, duration_tokens, text, ref_audio, ref_audios):
 
         # Content Encoder forward pass
         # self.content_encoder.forward(src_seq, src_seq)
-        content_features,_ = self.content_encoder(src_seq, src_pos)
+        content_features,_ = self.content_encoder(text)
         
+        ref_audio = ref_audio.permute(0,2,1)
+        ref_audios = ref_audios.permute(0,2,1)
+
+        # Forward pass through the MRTE module
+        mrte_features = self.mrte(content_features, ref_audio, ref_audios, duration_tokens)
+
+
         #上采样
-        length_regulator_output = self.length_regulator(content_features, length_target, mel_max_length)  # [ T*target_length, B,mel_dim]
+        length_regulator_output = self.length_regulator(content_features, duration_tokens)  # [ T*target_length, B,mel_dim]
 
-        decoder_output = self.mel_decoder(length_regulator_output, mel_pos)
 
-        mel_output = self.mel_linear(decoder_output)
-        mel_output = self.mask_tensor(mel_output, mel_pos, mel_max_length)
+        ref_audio = ref_audio.permute(0,2,1)
+        prosody_features,loss, _, _ = self.vq_prosody_encoder(ref_audio)
 
-        residual = self.postnet(mel_output)
-        residual = self.last_linear(residual)
-        mel_postnet_output = mel_output + residual
-        mel_postnet_output = self.mask_tensor(mel_postnet_output,
-                                                mel_pos,
-                                                mel_max_length)
-        # residual = self.postnet(mel_output)
-        # residual = self.last_linear(residual)
-        # mel_postnet_output = mel_output + residual
-        # mel_postnet_output = self.mask_tensor(mel_postnet_output,
-        #                                           mel_pos,
-        #                                           mel_max_length)
+        x = torch.cat([mrte_features,prosody_features],dim=-1)
+
+        x = x.permute(0,2,1)
+        mel_output = self.mel_decoder(x)
+        mel_output = mel_output.permute(0,2,1)
         
-       
-        return mel_output, mel_postnet_output
+        return mel_output,loss
+
 
     def discriminate(self, mel):
         # GAN Discriminator forward pass

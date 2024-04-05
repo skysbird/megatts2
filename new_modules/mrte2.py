@@ -88,7 +88,7 @@ class LengthRegulator(nn.Module):
 # 定义一个MRTE，这里我们假设Mel Encoder输出和Multi-Head Attention的结构和维度
 class MRTE2(nn.Module):
     def __init__(self, mel_dim, global_mel_dim, hidden_size, n_heads):
-        super(MRTE, self).__init__()
+        super(MRTE2, self).__init__()
 
         kernel_size = 3
         num_layers = 5
