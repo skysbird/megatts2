@@ -48,7 +48,7 @@ class VQProsodyEncoder(nn.Module):
         # Assuming mel_spec is of shape (batch_size, channels, time)
         x = self.conv1d(mel_spec)  # Apply Conv1D
         loss, quantized, encoding_indices = self.vq(x)  # Apply Vector Quantization
-        return loss, quantized, encoding_indices
+        return quantized, loss, encoding_indices
 
 # Define hyperparameters
 # in_channels = 80  # Number of mel bins
