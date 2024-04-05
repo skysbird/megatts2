@@ -46,14 +46,14 @@ model:
           dim_feedforward: 1024
           dropout: 0.1
       mrte:
-        class_path: new_modules.mrte.MRTE2
+        class_path: new_modules.mrte2.MRTE2
         init_args:
           mel_dim: 80
           global_mel_dim: 80
           hidden_size: 512
           n_heads: 2
       vqpe:
-        class_path: modules.vq_prosody_encoder.VQProsodyEncoder
+        class_path: new_modules.vq_prosody_encoder.VQProsodyEncoder
         init_args:
           in_channels: 80
           hidden_channels: 384

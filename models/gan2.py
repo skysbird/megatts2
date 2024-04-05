@@ -67,7 +67,7 @@ class VQGANTTS(nn.Module):
 
         # Content Encoder forward pass
         # self.content_encoder.forward(src_seq, src_seq)
-        content_features,_ = self.content_encoder(text)
+        content_features = self.content_encoder(text)
         
         ref_audio = ref_audio.permute(0,2,1)
         ref_audios = ref_audios.permute(0,2,1)

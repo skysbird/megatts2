@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torch.nn import TransformerEncoder, TransformerEncoderLayer
 import math
-from embedding import SinePositionalEmbedding
+from .embedding import SinePositionalEmbedding
 
 class FastSpeechContentEncoder(nn.Module):
     def __init__(self, d_model, nhead, num_encoder_layers, dim_feedforward, dropout):
