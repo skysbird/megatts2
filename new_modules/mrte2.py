@@ -138,19 +138,6 @@ class MRTE2(nn.Module):
 
         return mel_encoded #zt
 
-        # phone_p = phone.permute(1,0,2) #zc
-        # attn_output, _ = self.multihead_attention(phone_p, mel_encoded, mel_encoded)  # [B, T, mel_dim]
-
-        
-        # attn_output = attn_output.permute(0,1,2)
-        
-        # combined_output = phone_p + attn_output  
-
-        # combined_output = combined_output.permute(1,0,2)
-
-        # #上采样
-        # regulated_output = self.length_regulator(combined_output, target_length)  # [ T*target_length, B,mel_dim]
-        # return regulated_output
     
     def tc_latent(self, phone, mel_spec, global_mel_spec, target_length):
 

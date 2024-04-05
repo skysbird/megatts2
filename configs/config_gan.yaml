@@ -38,35 +38,29 @@ model:
     class_path: models.gan2.VQGANTTS
     init_args:
       content_encoder:
-        class_path: new_modules.content_encoder.ContentEncoder
+        class_path: new_modules.content_encoder2.FastSpeechContentEncoder
         init_args:
           d_model: 512
           nhead: 2
           num_encoder_layers: 8
           dim_feedforward: 1024
           dropout: 0.1
-          kernel_size: 5
-          vocab_size: 320
       mrte:
-        class_path: new_modules.mrte.MRTE
+        class_path: new_modules.mrte.MRTE2
         init_args:
           mel_dim: 80
           global_mel_dim: 80
           hidden_size: 512
           n_heads: 2
       vqpe:
-        class_path: modules.vqpe.VQProsodyEncoder
+        class_path: modules.vq_prosody_encoder.VQProsodyEncoder
         init_args:
-          mel_bins: 20
-          stride: 8
-          hidden_size: 512
+          in_channels: 80
+          hidden_channels: 384
           kernel_size: 5
-          n_layers: 3
-          n_stacks: 5
-          n_blocks: 2
-          vq_bins: 1024
-          vq_dim: 512
-          activation: ReLU
+          num_embeddings: 1024
+          embedding_dim: 256
+          commitment_cost: 0.25
       mel_decoder:
         class_path: modules.convnet.ConvNet
         init_args:
