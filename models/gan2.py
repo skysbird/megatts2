@@ -50,6 +50,8 @@ class VQGANTTS(nn.Module):
         self.length_regulator = LengthRegulator()
         self.mrte = mrte
         self.vqpe = vqpe
+        self.repeat_times = (512 + 384 - 1) // 384
+        self.up_conv1d = nn.Conv1d(384 * self.repeat_times, 512, kernel_size=1)
         
 
     def mask_tensor(self, mel_output, position, mel_max_length):
@@ -85,15 +87,14 @@ class VQGANTTS(nn.Module):
         # ref_audio = ref_audio.permute(0,2,1)
         prosody_features,loss, _,  = self.vqpe(ref_audio)
 
-        repeat_times = (512 + 384 - 1) // 384
 
         # 使用repeat函数沿特征维度重复vq_output
-        vq_output_repeated = prosody_features.repeat(1, repeat_times, 1)
+        vq_output_repeated = prosody_features.repeat(1, self.repeat_times, 1)
 
         # 使用一个1x1卷积来降维到512
-        conv1d = nn.Conv1d(384 * repeat_times, 512, kernel_size=1)
-        prosody_features = conv1d(vq_output_repeated)
-        prosody_features = prosody_features.permute(0,2,1)
+        
+        prosody_features = self.up_conv1d(vq_output_repeated)
+        prosody_features =prosody_features.permute(0,2,1)
         print("p",prosody_features.shape)
         x = torch.cat([mrte_features,prosody_features],dim=-1)
 
