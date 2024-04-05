@@ -84,7 +84,21 @@ class LengthRegulator(nn.Module):
             output = F.pad(
                 output, (0, 0, 0, mel_max_length-output.size(1), 0, 0))
         return output
-    
+
+class LayerNormChannels(nn.Module):
+    def __init__(self, normalized_shape):
+        super(LayerNormChannels, self).__init__()
+        self.layer_norm = nn.LayerNorm(normalized_shape)
+        
+    def forward(self, x):
+        # 调整x的形状，使得channels维度成为最后一个维度
+        x = x.permute(0, 2, 1)
+        # 应用LayerNorm
+        x = self.layer_norm(x)
+        # 将channels维度移回原来的位置
+        x = x.permute(0, 2, 1)
+        return x
+
 # 定义一个MRTE，这里我们假设Mel Encoder输出和Multi-Head Attention的结构和维度
 class MRTE2(nn.Module):
     def __init__(self, mel_dim, global_mel_dim, hidden_size, n_heads):
@@ -95,10 +109,10 @@ class MRTE2(nn.Module):
         self.conv_blocks = nn.ModuleList([
             nn.Sequential(
                 nn.Conv1d(mel_dim if i == 0 else hidden_size, hidden_size, kernel_size, padding=kernel_size//2),
-                nn.LayerNorm(hidden_size),
+                LayerNormChannels(hidden_size),
                 nn.GELU(),
                 nn.Conv1d(hidden_size, hidden_size, kernel_size, padding=kernel_size//2),
-                nn.LayerNorm(hidden_size),
+                LayerNormChannels(hidden_size),
                 nn.GELU()
             ) for i in range(num_layers)
         ])
