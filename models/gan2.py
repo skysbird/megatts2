@@ -115,7 +115,7 @@ class VQGANTTS(nn.Module):
         mrte_features = mrte_features.permute(0,2,1)
         x = torch.cat([mrte_features,prosody_features],dim=-1)
 
-        x = x.permute(0,2,1)
+        x = x.permute(0,2,1) #B D T
         mel_output = self.mel_decoder(x)
         mel_output = mel_output.permute(0,2,1)
         
