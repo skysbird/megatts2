@@ -102,7 +102,7 @@ class VQProsodyEncoder(nn.Module):
         for i in range(self.num_layers):
             x = self.conv1d_blocks[i](x)
         
-        x = self.pool(x) 
+#        x = self.pool(x) 
 
         for i in range(self.num_layers):
             x = self.last_conv1d_blocks[i](x)
