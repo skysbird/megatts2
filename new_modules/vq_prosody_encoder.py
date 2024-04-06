@@ -58,8 +58,32 @@ class VQProsodyEncoder(nn.Module):
                  threshold_ema_dead_code: int = 2,
                 ):
         super(VQProsodyEncoder, self).__init__()
+        num_layers = 5
 
-        self.conv1d = nn.Conv1d(in_channels, hidden_channels, kernel_size, padding=kernel_size//2)
+        self.num_layers = num_layers
+        self.conv1d_blocks = nn.ModuleList([
+            nn.Sequential(
+                nn.Conv1d(in_channels=in_channels if i == 0 else hidden_channels,
+                          out_channels=hidden_channels,
+                          kernel_size=kernel_size,
+                          padding=kernel_size // 2),
+                nn.LayerNorm([hidden_channels, 1]),
+                nn.GELU()
+            ) for i in range(num_layers)
+        ])
+        self.pool = nn.MaxPool1d(kernel_size=8, stride=8, padding=0)
+
+        self.last_conv1d_blocks = nn.ModuleList([
+            nn.Sequential(
+                nn.Conv1d(in_channels=in_channels if i == 0 else hidden_channels,
+                          out_channels=hidden_channels,
+                          kernel_size=kernel_size,
+                          padding=kernel_size // 2),
+                nn.LayerNorm([hidden_channels, 1]),
+                nn.GELU()
+            ) for i in range(num_layers)
+        ])
+        # self.conv1d = nn.Conv1d(in_channels, hidden_channels, kernel_size, padding=kernel_size//2)
         # self.vq = VectorQuantizer(hidden_channels, num_embeddings, embedding_dim, commitment_cost)
         self.vq = VectorQuantization(
             dim=hidden_channels,
@@ -72,7 +96,16 @@ class VQProsodyEncoder(nn.Module):
 
     def forward(self, mel_spec):
         # Assuming mel_spec is of shape (batch_size, channels, time)
-        x = self.conv1d(mel_spec)  # Apply Conv1D
+        #x = self.conv1d(mel_spec)  # Apply Conv1D
+        x = mel_spec
+        for i in range(self.num_layers):
+            x = self.conv1d_blocks[i](x)
+        
+        x = self.pool(x) 
+
+        for i in range(self.num_layers):
+            x = self.last_conv1d_blocks[i](x)
+
         quantize, embed_ind, loss = self.vq(x)  # Apply Vector Quantization
         return quantize, loss, embed_ind
 
