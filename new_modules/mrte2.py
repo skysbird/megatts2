@@ -151,11 +151,11 @@ class MRTE2(nn.Module):
         for conv_block in self.conv_blocks:
             mel_encoded = conv_block(mel_encoded)
 
-        print(mel_encoded.shape)
+        # print(mel_encoded.shape)
         #下采样
         mel_encoded = self.downsample(mel_encoded)
 
-        print(mel_encoded.shape)
+        # print(mel_encoded.shape)
 
         #卷
         for conv_block in self.last_conv_blocks:
