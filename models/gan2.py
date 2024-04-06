@@ -4,8 +4,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from new_modules.content_encoder2 import FastSpeechContentEncoder
 from new_modules.mrte2 import MRTE2
-from new_modules.vq_prosody_encoder import VQProsodyEncoder
 from new_modules.mel_decoder import MelDecoder
+from modules.quantization.core_vq import VectorQuantization
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent))
