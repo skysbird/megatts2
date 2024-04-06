@@ -135,7 +135,6 @@ class MRTE2(nn.Module):
 
         # self.mel_conv = nn.Conv1d(in_channels=mel_dim, out_channels=hidden_size, kernel_size=3, padding=1)
         # self.mel_encoder = MelGenerator() 
-        self.multihead_attention = nn.MultiheadAttention(embed_dim=hidden_size, num_heads=n_heads)
         # self.global_encoder = GlobalEncoder(first_channels=global_mel_dim)
         self.length_regulator = LengthRegulator()
 

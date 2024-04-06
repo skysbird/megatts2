@@ -52,7 +52,8 @@ class VQGANTTS(nn.Module):
         self.vqpe = vqpe
         self.repeat_times = (512 + 256 - 1) // 256
         self.up_conv1d = nn.Conv1d(256 * self.repeat_times, 512, kernel_size=1)
-        
+        self.multihead_attention = nn.MultiheadAttention(embed_dim=512, num_heads=2)
+
 
     def mask_tensor(self, mel_output, position, mel_max_length):
         lengths = torch.max(position, -1)[0]
@@ -60,11 +61,7 @@ class VQGANTTS(nn.Module):
         mask = mask.unsqueeze(-1).expand(-1, -1, mel_output.size(-1))
         return mel_output.masked_fill(mask, 0.)
     
-    # def forward(self, 
-    #             phonemes:torch.Tensor, #(B, T)
-    #             duration_tokens: torch.Tensor #(B,)
-    #             ):
-    # def forward(self, src_seq, src_pos, mel_pos=None, mel_max_length=None, length_target=None, alpha=1.0):
+   
     def forward(self, duration_tokens, text, ref_audio, ref_audios):
 
         # Content Encoder forward pass
@@ -78,9 +75,22 @@ class VQGANTTS(nn.Module):
         mrte_features = self.mrte(content_features, ref_audio, ref_audios, duration_tokens)
 
 
+        content_features = content_features.permute(1,0,2)
+        mrte_features = mrte_features.permute(2,0,1)
+        # attension
+        attn_output, _ = self.multihead_attention(content_features, mrte_features, mrte_features)  # [B, T, mel_dim]
+
+        # concat
+        attn_output = attn_output.permute(0,1,2)
+
+        combined_output = content_features + attn_output   # [B, T*target_length, mel_dim+global_dim]
+
+        combined_output = combined_output.permute(1,0,2)
+
+
         #print("m",mrte_features.shape)
         #上采样
-        mrte_features = self.length_regulator(content_features, duration_tokens)  # [ T*target_length, B,mel_dim]
+        mrte_features = self.length_regulator(combined_output, duration_tokens)  # [ T*target_length, B,mel_dim]
 
 
         #print("m",mrte_features.shape)
