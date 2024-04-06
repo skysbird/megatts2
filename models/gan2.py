@@ -5,7 +5,8 @@ import torch.nn.functional as F
 from new_modules.content_encoder2 import FastSpeechContentEncoder
 from new_modules.mrte2 import MRTE2
 from new_modules.mel_decoder import MelDecoder
-from new_modules.vq_prosody_encoder import VQProsodyEncoder
+# from new_modules.vq_prosody_encoder import VQProsodyEncoder
+from modules.vqpe import VQProsodyEncoder
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent))
@@ -99,7 +100,10 @@ class VQGANTTS(nn.Module):
 
         #print("m",mrte_features.shape)
         # ref_audio = ref_audio.permute(0,2,1)
+        ref_audio = ref_audio.permute(0,2,1)
         prosody_features,loss, _,  = self.vqpe(ref_audio)
+
+        # prosody_features,loss, _,  = self.vqpe(ref_audio)
 
 
         #print("p",prosody_features.shape)
