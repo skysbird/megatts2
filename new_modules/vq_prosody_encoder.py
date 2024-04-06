@@ -108,7 +108,6 @@ class VQProsodyEncoder(nn.Module):
             x = self.last_conv1d_blocks[i](x)
 
         quantize, embed_ind, loss = self.vq(x)  # Apply Vector Quantization
-        quantize = quantize.permute(0,2,1)
         return quantize, loss, embed_ind
 
 # Define hyperparameters
