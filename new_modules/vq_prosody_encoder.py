@@ -62,7 +62,7 @@ class VQProsodyEncoder(nn.Module):
         self.conv1d = nn.Conv1d(in_channels, hidden_channels, kernel_size, padding=kernel_size//2)
         # self.vq = VectorQuantizer(hidden_channels, num_embeddings, embedding_dim, commitment_cost)
         self.vq = VectorQuantization(
-            dim=dim,
+            dim=hidden_channels,
             codebook_size=bins,
             decay=decay,
             kmeans_init=kmeans_init,
