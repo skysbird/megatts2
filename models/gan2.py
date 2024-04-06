@@ -110,8 +110,9 @@ class VQGANTTS(nn.Module):
         # 使用一个1x1卷积来降维到512
         
         prosody_features = self.up_conv1d(vq_output_repeated)
-        prosody_features =prosody_features.permute(0,2,1)
+        # prosody_features =prosody_features.permute(0,2,1)
         #print("p",prosody_features.shape)
+        mrte_features = mrte_features.permute(0,2,1)
         x = torch.cat([mrte_features,prosody_features],dim=-1)
 
         x = x.permute(0,2,1)
