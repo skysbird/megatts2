@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class VectorQuantizer(nn.Module):
-    def __init__(self, num_embeddings, embedding_dim, commitment_cost):
+    def __init__(self, hidden_channels, num_embeddings, embedding_dim, commitment_cost):
         super(VectorQuantizer, self).__init__()
         self.num_embeddings = num_embeddings
         self.embedding_dim = embedding_dim
@@ -11,10 +11,13 @@ class VectorQuantizer(nn.Module):
 
         self.embedding = nn.Embedding(num_embeddings, embedding_dim)
         self.embedding.weight.data.uniform_(-1.0 / num_embeddings, 1.0 / num_embeddings)
+        self.adjust_conv = nn.Conv1d(hidden_channels, embedding_dim, kernel_size=1)  # 新增加的卷积层
 
     def forward(self, inputs):
-        inputs = inputs.permute(0, 2, 1).contiguous()
-        print(inputs.shape)
+        #inputs = inputs.permute(0, 2, 1).contiguous()
+        #print(inputs.shape)
+        inputs = self.adjust_conv(inputs)  # 新增加的卷积层来调整维度
+
         flat_inputs = inputs.view(-1, self.embedding_dim)
 
         # Calculate distances
@@ -35,7 +38,7 @@ class VectorQuantizer(nn.Module):
         q_latent_loss = F.mse_loss(quantized, inputs.detach())
         loss = q_latent_loss + self.commitment_cost * e_latent_loss
 
-        quantized = quantized.permute(0, 2, 1).contiguous()
+        #quantized = quantized.permute(0, 2, 1).contiguous()
         return loss, quantized, encoding_indices
 
 class VQProsodyEncoder(nn.Module):
@@ -43,7 +46,7 @@ class VQProsodyEncoder(nn.Module):
         super(VQProsodyEncoder, self).__init__()
 
         self.conv1d = nn.Conv1d(in_channels, hidden_channels, kernel_size, padding=kernel_size//2)
-        self.vq = VectorQuantizer(num_embeddings, embedding_dim, commitment_cost)
+        self.vq = VectorQuantizer(hidden_channels, num_embeddings, embedding_dim, commitment_cost)
 
     def forward(self, mel_spec):
         # Assuming mel_spec is of shape (batch_size, channels, time)

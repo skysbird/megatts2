@@ -114,6 +114,9 @@ class MegaGANTrainer(pl.LightningModule):
             opt1.step()
             sch1.step()
 
+
+#            print("h",y_hat)
+
             # Train generator
             G_loss_re = F.l1_loss(y, y_hat)
 
