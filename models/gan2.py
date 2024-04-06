@@ -76,7 +76,11 @@ class VQGANTTS(nn.Module):
 
 
         content_features = content_features.permute(1,0,2)
-        mrte_features = mrte_features.permute(2,0,1)
+        #mrte_features = mrte_features.permute(2,0,1)
+
+        #print("c",content_features.shape)
+        #print("m",mrte_features.shape)
+
         # attension
         attn_output, _ = self.multihead_attention(content_features, mrte_features, mrte_features)  # [B, T, mel_dim]
 
