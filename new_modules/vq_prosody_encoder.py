@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from modules.quantization.core_vq import VectorQuantization
+from .mrte2 import LayerNormChannels
 
 # class VectorQuantizer(nn.Module):
 #     def __init__(self, hidden_channels, num_embeddings, embedding_dim, commitment_cost):
@@ -67,7 +68,7 @@ class VQProsodyEncoder(nn.Module):
                           out_channels=hidden_channels,
                           kernel_size=kernel_size,
                           padding=kernel_size // 2),
-                nn.LayerNorm([hidden_channels, 1]),
+                LayerNormChannels(hidden_channels),
                 nn.GELU()
             ) for i in range(num_layers)
         ])
@@ -79,7 +80,7 @@ class VQProsodyEncoder(nn.Module):
                           out_channels=hidden_channels,
                           kernel_size=kernel_size,
                           padding=kernel_size // 2),
-                nn.LayerNorm([hidden_channels, 1]),
+                LayerNormChannels(hidden_channels),
                 nn.GELU()
             ) for i in range(num_layers)
         ])
