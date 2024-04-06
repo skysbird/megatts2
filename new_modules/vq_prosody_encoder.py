@@ -76,7 +76,7 @@ class VQProsodyEncoder(nn.Module):
 
         self.last_conv1d_blocks = nn.ModuleList([
             nn.Sequential(
-                nn.Conv1d(in_channels=in_channels if i == 0 else hidden_channels,
+                nn.Conv1d(hidden_channels,
                           out_channels=hidden_channels,
                           kernel_size=kernel_size,
                           padding=kernel_size // 2),
