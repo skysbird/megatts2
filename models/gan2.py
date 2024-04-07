@@ -54,8 +54,8 @@ class VQGANTTS(nn.Module):
         self.length_regulator = LengthRegulator()
         self.mrte = mrte
         self.vqpe = vqpe
-        self.repeat_times = (512 + 384 - 1) // 384
-        self.up_conv1d = nn.Conv1d(384 * self.repeat_times, 512, kernel_size=1)
+        self.repeat_times = (512 + 256 - 1) // 256
+        self.up_conv1d = nn.Conv1d(256 * self.repeat_times, 512, kernel_size=1)
         self.multihead_attention = nn.MultiheadAttention(embed_dim=512, num_heads=2)
 
         self.mel_decoder = ConvNet(
@@ -116,7 +116,7 @@ class VQGANTTS(nn.Module):
         # ref_audio = ref_audio.permute(0,2,1)
         # ref_audio = ref_audio.permute(0,2,1)
         print("r",ref_audio.shape)
-        prosody_features,loss, vq_loss,_  = self.vqpe(ref_audio)
+        prosody_features,loss, _  = self.vqpe(ref_audio)
 
         # prosody_features,loss, _,  = self.vqpe(ref_audio)
 
@@ -129,7 +129,7 @@ class VQGANTTS(nn.Module):
         # 使用一个1x1卷积来降维到512
         
         #prosody_features = self.up_conv1d(vq_output_repeated)
-        #prosody_features =prosody_features.permute(0,2,1)
+        prosody_features =prosody_features.permute(0,2,1)
         print("p",prosody_features.shape)
         content_features = content_features.permute(1,0,2)
         print("c",content_features.shape)
@@ -142,7 +142,7 @@ class VQGANTTS(nn.Module):
         mel_output = self.mel_decoder(x)
         mel_output = mel_output.permute(0,2,1)
         
-        return mel_output,loss,vq_loss
+        return mel_output,loss
 
 
     def discriminate(self, mel):
