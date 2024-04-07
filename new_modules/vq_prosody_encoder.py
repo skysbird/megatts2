@@ -187,13 +187,9 @@ class VQProsodyEncoder(nn.Module):
                 nn.GELU()
             ) for i in range(num_layers)
         ])
-<<<<<<< HEAD
-        self.pool = nn.MaxPool1d(kernel_size=8, stride=8, padding=0,ceil_mode=True)
-=======
 
         self.pool = nn.MaxPool1d(kernel_size=8, stride=8, padding=0,ceil_mode=True)
 
->>>>>>> 8df25be80bdab9c706deba8c0f552f0a5058840b
 
         self.last_conv1d_blocks = nn.ModuleList([
             nn.Sequential(
