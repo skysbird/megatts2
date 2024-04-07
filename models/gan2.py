@@ -5,8 +5,8 @@ import torch.nn.functional as F
 from new_modules.content_encoder2 import FastSpeechContentEncoder
 from new_modules.mrte2 import MRTE2
 from new_modules.mel_decoder import MelDecoder
-# from new_modules.vq_prosody_encoder import VQProsodyEncoder
-from modules.vqpe import VQProsodyEncoder
+from new_modules.vq_prosody_encoder import VQProsodyEncoder
+# from modules.vqpe import VQProsodyEncoder
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent))
@@ -116,7 +116,7 @@ class VQGANTTS(nn.Module):
         # ref_audio = ref_audio.permute(0,2,1)
         # ref_audio = ref_audio.permute(0,2,1)
         print("r",ref_audio.shape)
-        prosody_features,loss, _, _  = self.vqpe(ref_audio)
+        prosody_features,loss,vq_loss, _  = self.vqpe(ref_audio)
         #old zq, commit_loss, vq_loss, codes
         # prosody_features,loss, _,  = self.vqpe(ref_audio)
 
@@ -142,7 +142,7 @@ class VQGANTTS(nn.Module):
         mel_output = self.mel_decoder(x)
         mel_output = mel_output.permute(0,2,1)
         
-        return mel_output,loss
+        return mel_output,loss,vq_loss
 
 
     def discriminate(self, mel):
