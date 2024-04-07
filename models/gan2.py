@@ -43,7 +43,6 @@ class VQGANTTS(nn.Module):
                  content_encoder: FastSpeechContentEncoder,
                  mrte:MRTE2,
                  vqpe: VQProsodyEncoder,
-                 mel_decoder: ConvNet,
                  kernel_size = 5,
                  activation = 'ReLU',
                  hidden_size = 512,
@@ -52,7 +51,6 @@ class VQGANTTS(nn.Module):
     ):
         super(VQGANTTS, self).__init__()
         self.content_encoder = content_encoder # ContentEncoder()
-        self.mel_decoder = mel_decoder # MelDecoder(first_channel=512 + 512, last_channel = 80) #vq and mrte dim
         self.length_regulator = LengthRegulator()
         self.mrte = mrte
         self.vqpe = vqpe
@@ -60,7 +58,7 @@ class VQGANTTS(nn.Module):
         self.up_conv1d = nn.Conv1d(384 * self.repeat_times, 512, kernel_size=1)
         self.multihead_attention = nn.MultiheadAttention(embed_dim=512, num_heads=2)
 
-        self.decoder = ConvNet(
+        self.mel_decoder = ConvNet(
             in_channels=mrte.hidden_size + vqpe.vq.dimension,
             out_channels=mrte.mel_dim,
             hidden_size=hidden_size,

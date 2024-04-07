@@ -62,18 +62,8 @@ model:
           n_stacks: 3
           n_blocks: 2
           vq_bins: 1024
-          vq_dim: 512
+          vq_dim: 256
           activation: ReLU
-      mel_decoder:
-        class_path: modules.convnet.ConvNet
-        init_args:
-          in_channels: 1024 # 512 + 512
-          out_channels: 80
-          n_stacks: 4
-          n_blocks: 2
-          hidden_size: 512
-          kernel_size: 5
-          activation: 'ReLU'
   D:
     class_path: modules.dscrm.Discriminator
     init_args:
