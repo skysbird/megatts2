@@ -218,16 +218,22 @@ class VQProsodyEncoder(nn.Module):
     def forward(self, mel_spec):
         # Assuming mel_spec is of shape (batch_size, channels, time)
         #x = self.conv1d(mel_spec)  # Apply Conv1D
+        mel_len = mel_spec.size(1)
+
         x = mel_spec
         for i in range(self.num_layers):
             x = self.conv1d_blocks[i](x)
         
-#        x = self.pool(x) 
+        x = self.pool(x) 
 
         for i in range(self.num_layers):
             x = self.last_conv1d_blocks[i](x)
 
         quantize, loss, (perplexity, encodings, _) = self.vq(x)
+
+        quantize = rearrange(quantize, "B D T -> B T D").unsqueeze(2).contiguous().expand(-1, -1, 8 , -1)
+        quantize = rearrange(quantize, "B T S D -> B (T S) D")[:, :mel_len, :]
+
         return quantize, loss, encodings
 
 # Define hyperparameters
