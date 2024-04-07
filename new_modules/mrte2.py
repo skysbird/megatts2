@@ -103,7 +103,8 @@ class LayerNormChannels(nn.Module):
 class MRTE2(nn.Module):
     def __init__(self, mel_dim, global_mel_dim, hidden_size, n_heads):
         super(MRTE2, self).__init__()
-
+        self.hidden_size = hidden_size
+        self.mel_dim = mel_dim
         kernel_size = 3
         num_layers = 5
         self.conv_blocks = nn.ModuleList([
