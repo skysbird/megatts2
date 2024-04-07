@@ -1,47 +1,160 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from modules.quantization.core_vq import VectorQuantization
 from .mrte2 import LayerNormChannels
+from einops import rearrange
 
-# class VectorQuantizer(nn.Module):
-#     def __init__(self, hidden_channels, num_embeddings, embedding_dim, commitment_cost):
-#         super(VectorQuantizer, self).__init__()
-#         self.num_embeddings = num_embeddings
-#         self.embedding_dim = embedding_dim
-#         self.commitment_cost = commitment_cost
+class VectorQuantiser(nn.Module):
+    """
+    Improved version over vector quantiser, with the dynamic initialisation
+    for these unoptimised "dead" points.
+    num_embed: number of codebook entry
+    embed_dim: dimensionality of codebook entry
+    beta: weight for the commitment loss
+    distance: distance for looking up the closest code
+    anchor: anchor sampled methods
+    first_batch: if true, the offline version of our model
+    contras_loss: if true, use the contras_loss to further improve the performance
+    """
+    def __init__(self, num_embed, embed_dim, beta, distance='cos', 
+                 anchor='probrandom', first_batch=False, contras_loss=False):
+        super().__init__()
 
-#         self.embedding = nn.Embedding(num_embeddings, embedding_dim)
-#         self.embedding.weight.data.uniform_(-1.0 / num_embeddings, 1.0 / num_embeddings)
-#         self.adjust_conv = nn.Conv1d(hidden_channels, embedding_dim, kernel_size=1)  # 新增加的卷积层
+        self.num_embed = num_embed
+        self.embed_dim = embed_dim
+        self.beta = beta
+        self.distance = distance
+        self.anchor = anchor
+        self.first_batch = first_batch
+        self.contras_loss = contras_loss
+        self.decay = 0.99
+        self.init = False
 
-#     def forward(self, inputs):
-#         #inputs = inputs.permute(0, 2, 1).contiguous()
-#         #print(inputs.shape)
-#         inputs = self.adjust_conv(inputs)  # 新增加的卷积层来调整维度
+        self.pool = FeaturePool(self.num_embed, self.embed_dim)
+        self.embedding = nn.Embedding(self.num_embed, self.embed_dim)
+        self.embedding.weight.data.uniform_(-1.0 / self.num_embed, 1.0 / self.num_embed)
+        self.register_buffer("embed_prob", torch.zeros(self.num_embed))
 
-#         flat_inputs = inputs.view(-1, self.embedding_dim)
+    
+    def forward(self, z, temp=None, rescale_logits=False, return_logits=False):
+        assert temp is None or temp==1.0, "Only for interface compatible with Gumbel"
+        assert rescale_logits==False, "Only for interface compatible with Gumbel"
+        assert return_logits==False, "Only for interface compatible with Gumbel"
+        # reshape z -> (batch, height, width, channel) and flatten
+        z = rearrange(z, 'b c h w -> b h w c').contiguous()
+        z_flattened = z.view(-1, self.embed_dim)
 
-#         # Calculate distances
-#         distances = (torch.sum(flat_inputs**2, dim=1, keepdim=True)
-#                      + torch.sum(self.embedding.weight**2, dim=1)
-#                      - 2 * torch.matmul(flat_inputs, self.embedding.weight.t()))
+        # clculate the distance
+        if self.distance == 'l2':
+            # l2 distances from z to embeddings e_j (z - e)^2 = z^2 + e^2 - 2 e * z
+            d = - torch.sum(z_flattened.detach() ** 2, dim=1, keepdim=True) - \
+                torch.sum(self.embedding.weight ** 2, dim=1) + \
+                2 * torch.einsum('bd, dn-> bn', z_flattened.detach(), rearrange(self.embedding.weight, 'n d-> d n'))
+        elif self.distance == 'cos':
+            # cosine distances from z to embeddings e_j 
+            normed_z_flattened = F.normalize(z_flattened, dim=1).detach()
+            normed_codebook = F.normalize(self.embedding.weight, dim=1)
+            d = torch.einsum('bd,dn->bn', normed_z_flattened, rearrange(normed_codebook, 'n d -> d n'))
 
-#         encoding_indices = torch.argmin(distances, dim=1).unsqueeze(1)
-#         encodings = torch.zeros(encoding_indices.size(0), self.num_embeddings, device=inputs.device)
-#         encodings.scatter_(1, encoding_indices, 1)
+        # encoding
+        sort_distance, indices = d.sort(dim=1)
+        # look up the closest point for the indices
+        encoding_indices = indices[:,-1]
+        encodings = torch.zeros(encoding_indices.unsqueeze(1).shape[0], self.num_embed, device=z.device)
+        encodings.scatter_(1, encoding_indices.unsqueeze(1), 1)
 
-#         # Quantize and reshape
-#         quantized = torch.matmul(encodings, self.embedding.weight).view(inputs.shape)
-#         quantized = inputs + (quantized - inputs).detach()
+        # quantise and unflatten
+        z_q = torch.matmul(encodings, self.embedding.weight).view(z.shape)
+        # compute loss for embedding
+        loss = self.beta * torch.mean((z_q.detach()-z)**2) + torch.mean((z_q - z.detach()) ** 2)
+        # preserve gradients
+        z_q = z + (z_q - z).detach()
+        # reshape back to match original input shape
+        z_q = rearrange(z_q, 'b h w c -> b c h w').contiguous()
+        # count
+        import pdb
+        pdb.set_trace()
+        avg_probs = torch.mean(encodings, dim=0)
+        perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
+        min_encodings = encodings
 
-#         # Loss
-#         e_latent_loss = F.mse_loss(quantized.detach(), inputs)
-#         q_latent_loss = F.mse_loss(quantized, inputs.detach())
-#         loss = q_latent_loss + self.commitment_cost * e_latent_loss
+        # online clustered reinitialisation for unoptimized points
+        if self.training:
+            # calculate the average usage of code entries
+            self.embed_prob.mul_(self.decay).add_(avg_probs, alpha= 1 - self.decay)
+            # running average updates
+            if self.anchor in ['closest', 'random', 'probrandom'] and (not self.init):
+                # closest sampling
+                if self.anchor == 'closest':
+                    sort_distance, indices = d.sort(dim=0)
+                    random_feat = z_flattened.detach()[indices[-1,:]]
+                # feature pool based random sampling
+                elif self.anchor == 'random':
+                    random_feat = self.pool.query(z_flattened.detach())
+                # probabilitical based random sampling
+                elif self.anchor == 'probrandom':
+                    norm_distance = F.softmax(d.t(), dim=1)
+                    prob = torch.multinomial(norm_distance, num_samples=1).view(-1)
+                    random_feat = z_flattened.detach()[prob]
+                # decay parameter based on the average usage
+                decay = torch.exp(-(self.embed_prob*self.num_embed*10)/(1-self.decay)-1e-3).unsqueeze(1).repeat(1, self.embed_dim)
+                self.embedding.weight.data = self.embedding.weight.data * (1 - decay) + random_feat * decay
+                if self.first_batch:
+                    self.init = True
+            # contrastive loss
+            if self.contras_loss:
+                sort_distance, indices = d.sort(dim=0)
+                dis_pos = sort_distance[-max(1, int(sort_distance.size(0)/self.num_embed)):,:].mean(dim=0, keepdim=True)
+                dis_neg = sort_distance[:int(sort_distance.size(0)*1/2),:]
+                dis = torch.cat([dis_pos, dis_neg], dim=0).t() / 0.07
+                contra_loss = F.cross_entropy(dis, torch.zeros((dis.size(0),), dtype=torch.long, device=dis.device))
+                loss +=  contra_loss
 
-#         #quantized = quantized.permute(0, 2, 1).contiguous()
-#         return loss, quantized, encoding_indices
+        return z_q, loss, (perplexity, min_encodings, encoding_indices)
+
+class FeaturePool():
+    """
+    This class implements a feature buffer that stores previously encoded features
+
+    This buffer enables us to initialize the codebook using a history of generated features
+    rather than the ones produced by the latest encoders
+    """
+    def __init__(self, pool_size, dim=64):
+        """
+        Initialize the FeaturePool class
+
+        Parameters:
+            pool_size(int) -- the size of featue buffer
+        """
+        self.pool_size = pool_size
+        if self.pool_size > 0:
+            self.nums_features = 0
+            self.features = (torch.rand((pool_size, dim)) * 2 - 1)/ pool_size
+
+    def query(self, features):
+        """
+        return features from the pool
+        """
+        self.features = self.features.to(features.device)    
+        if self.nums_features < self.pool_size:
+            if features.size(0) > self.pool_size: # if the batch size is large enough, directly update the whole codebook
+                random_feat_id = torch.randint(0, features.size(0), (int(self.pool_size),))
+                self.features = features[random_feat_id]
+                self.nums_features = self.pool_size
+            else:
+                # if the mini-batch is not large nuough, just store it for the next update
+                num = self.nums_features + features.size(0)
+                self.features[self.nums_features:num] = features
+                self.nums_features = num
+        else:
+            if features.size(0) > int(self.pool_size):
+                random_feat_id = torch.randint(0, features.size(0), (int(self.pool_size),))
+                self.features = features[random_feat_id]
+            else:
+                random_id = torch.randperm(self.pool_size)
+                self.features[random_id[:features.size(0)]] = features
+
+        return self.features
 
 class VQProsodyEncoder(nn.Module):
     def __init__(self, 
@@ -57,6 +170,10 @@ class VQProsodyEncoder(nn.Module):
                  kmeans_init: bool = True,
                  kmeans_iters: int = 50,
                  threshold_ema_dead_code: int = 2,
+                 distance=0.25,
+                 anchor='closest',
+                 first_batch=False,
+                 contras_loss=True
                 ):
         super(VQProsodyEncoder, self).__init__()
         num_layers = 5
@@ -86,14 +203,19 @@ class VQProsodyEncoder(nn.Module):
         ])
         # self.conv1d = nn.Conv1d(in_channels, hidden_channels, kernel_size, padding=kernel_size//2)
         # self.vq = VectorQuantizer(hidden_channels, num_embeddings, embedding_dim, commitment_cost)
-        self.vq = VectorQuantization(
-            dim=hidden_channels,
-            codebook_size=bins,
-            decay=decay,
-            kmeans_init=kmeans_init,
-            kmeans_iters=kmeans_iters,
-            threshold_ema_dead_code=threshold_ema_dead_code
+            # def __init__(self, num_embed, embed_dim, beta, distance='cos', 
+            #      anchor='probrandom', first_batch=False, contras_loss=False):
+
+        self.vq = VectorQuantiser(
+            num_embed=bins,
+            embed_dim=hidden_channels,
+            commitment_cost=commitment_cost,
+            distance=distance,
+            anchor=anchor,
+            first_batch=first_batch,
+            contras_loss=contras_loss
         )
+        
 
     def forward(self, mel_spec):
         # Assuming mel_spec is of shape (batch_size, channels, time)
@@ -107,8 +229,8 @@ class VQProsodyEncoder(nn.Module):
         for i in range(self.num_layers):
             x = self.last_conv1d_blocks[i](x)
 
-        quantize, embed_ind, loss = self.vq(x)  # Apply Vector Quantization
-        return quantize, loss, embed_ind
+        quantize, loss, (perplexity, encodings, _) = self.vq(x)
+        return quantize, loss, encodings
 
 # Define hyperparameters
 # in_channels = 80  # Number of mel bins
