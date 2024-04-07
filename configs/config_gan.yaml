@@ -53,14 +53,17 @@ model:
           hidden_size: 512
           n_heads: 2
       vqpe:
-        class_path: new_modules.vq_prosody_encoder.VQProsodyEncoder
+        class_path: modules.vqpe.VQProsodyEncoder
         init_args:
-          in_channels: 80
-          hidden_channels: 384
+          mel_bins: 80
+          stride: 8
+          hidden_size: 384
           kernel_size: 5
-          num_embeddings: 1024
-          embedding_dim: 256
-          commitment_cost: 0.25
+          n_stacks: 3
+          n_blocks: 2
+          vq_bins: 1024
+          vq_dim: 512
+          activation: ReLU
       mel_decoder:
         class_path: modules.convnet.ConvNet
         init_args:
