@@ -132,7 +132,7 @@ class VQGANTTS(nn.Module):
         # 使用一个1x1卷积来降维到512
         
         #prosody_features = self.up_conv1d(vq_output_repeated)
-        prosody_features =prosody_features.permute(0,2,1)
+        # prosody_features =prosody_features.permute(0,2,1) #new vq
         print("p",prosody_features.shape)
         content_features = content_features.permute(1,0,2)
         print("c",content_features.shape)
