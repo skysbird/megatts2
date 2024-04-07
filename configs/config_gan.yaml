@@ -58,6 +58,8 @@ model:
           in_channels: 80  # Number of mel bins
           hidden_channels: 384
           kernel_size: 5
+          vq_distance: l2
+          vq_contras_loss: false
           #init_args:
           #  mel_bins: 80
           #  stride: 8

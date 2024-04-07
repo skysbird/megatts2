@@ -47,6 +47,7 @@ class VectorQuantiser(nn.Module):
 
         z_flattened = z.view(-1, self.embed_dim)
 
+        print("dis",self.distance)
         # clculate the distance
         if self.distance == 'l2':
             # l2 distances from z to embeddings e_j (z - e)^2 = z^2 + e^2 - 2 e * z
