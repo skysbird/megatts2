@@ -116,8 +116,8 @@ class VQGANTTS(nn.Module):
         # ref_audio = ref_audio.permute(0,2,1)
         # ref_audio = ref_audio.permute(0,2,1)
         print("r",ref_audio.shape)
-        prosody_features,loss, _  = self.vqpe(ref_audio)
-
+        prosody_features,loss,vq_loss, _  = self.vqpe(ref_audio)
+        #old zq, commit_loss, vq_loss, codes
         # prosody_features,loss, _,  = self.vqpe(ref_audio)
 
 
@@ -142,7 +142,7 @@ class VQGANTTS(nn.Module):
         mel_output = self.mel_decoder(x)
         mel_output = mel_output.permute(0,2,1)
         
-        return mel_output,loss
+        return mel_output,loss,vq_loss
 
 
     def discriminate(self, mel):

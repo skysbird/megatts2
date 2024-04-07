@@ -81,7 +81,7 @@ class MegaGANTrainer(pl.LightningModule):
     def forward(self, batch: dict):
         # forward(self, duration_tokens, text, ref_audio, ref_audios):
 
-        y_hat, commit_loss = self.G(
+        y_hat, commit_loss, vq_loss = self.G(
             duration_tokens=batch["duration_tokens"],
             text=batch["phone_tokens"],
             # phone_lens=batch["tokens_lens"],
@@ -89,7 +89,7 @@ class MegaGANTrainer(pl.LightningModule):
             ref_audios=batch["mel_timbres"]
         )
 
-        return y_hat, commit_loss
+        return y_hat, commit_loss, vq_loss
 
     def training_step(self, batch: dict, batch_idx, **kwargs):
         opt1, opt2 = self.optimizers()
@@ -97,7 +97,7 @@ class MegaGANTrainer(pl.LightningModule):
 
         with torch.cuda.amp.autocast(dtype=self.train_dtype):
             self.G.train()
-            y_hat, G_loss_commit = self(batch)
+            y_hat, G_loss_commit, G_loss_vq = self(batch)
 
             # Train discriminator
             y = batch["mel_targets"]
@@ -120,8 +120,10 @@ class MegaGANTrainer(pl.LightningModule):
             # Train generator
             G_loss_re = F.l1_loss(y, y_hat)
 
-            G_loss = G_loss_re + G_loss_commit * self.hparams.G_commit_loss_coeff 
-                
+            # G_loss = G_loss_re + G_loss_commit * self.hparams.G_commit_loss_coeff 
+            G_loss = G_loss_re + G_loss_commit * self.hparams.G_commit_loss_coeff + \
+                G_loss_vq * self.hparams.G_vq_loss_coeff
+            
             G_loss_adv = 0.5 * torch.mean((self.D(y_hat)["y"] - 1) ** 2)
             G_loss_total = G_loss_adv * self.hparams.G_adv_loss_coeff + G_loss
 
@@ -139,7 +141,7 @@ class MegaGANTrainer(pl.LightningModule):
             self.log("train/G_loss_adv", G_loss_adv)
             self.log("train/G_loss", G_loss)
             self.log("train/G_loss_commit", G_loss_commit)
-#            self.log("train/G_loss_vq", G_loss_vq)
+            self.log("train/G_loss_vq", G_loss_vq)
             self.log("train/G_loss_re", G_loss_re)
 
         # self.train_step_outputs.append({
