@@ -192,7 +192,7 @@ class VQProsodyEncoder(nn.Module):
         self.last_conv1d_blocks = nn.ModuleList([
             nn.Sequential(
                 nn.Conv1d(hidden_channels,
-                          out_channels=hidden_channels,
+                          out_channels= vq_dim if (i == num_layers - 1) else hidden_channels,
                           kernel_size=kernel_size,
                           padding=kernel_size // 2),
                 LayerNormChannels(hidden_channels),
