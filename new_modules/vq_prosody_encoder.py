@@ -41,7 +41,10 @@ class VectorQuantiser(nn.Module):
         assert rescale_logits==False, "Only for interface compatible with Gumbel"
         assert return_logits==False, "Only for interface compatible with Gumbel"
         # reshape z -> (batch, height, width, channel) and flatten
-        z = rearrange(z, 'b c h w -> b h w c').contiguous()
+        #z = rearrange(z, 'b c h w -> b h w c').contiguous()
+        print(z.shape)
+        z = rearrange(z, "b d n -> b n d")
+
         z_flattened = z.view(-1, self.embed_dim)
 
         # clculate the distance
@@ -70,10 +73,10 @@ class VectorQuantiser(nn.Module):
         # preserve gradients
         z_q = z + (z_q - z).detach()
         # reshape back to match original input shape
-        z_q = rearrange(z_q, 'b h w c -> b c h w').contiguous()
+        z_q = rearrange(z_q, 'b n d -> b d n').contiguous()
         # count
-        import pdb
-        pdb.set_trace()
+        #import pdb
+        #pdb.set_trace()
         avg_probs = torch.mean(encodings, dim=0)
         perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
         min_encodings = encodings
@@ -192,7 +195,7 @@ class VQProsodyEncoder(nn.Module):
                           out_channels= vq_dim if (i == num_layers - 1) else hidden_channels,
                           kernel_size=kernel_size,
                           padding=kernel_size // 2),
-                LayerNormChannels(hidden_channels),
+                LayerNormChannels( vq_dim if (i == num_layers - 1) else hidden_channels),
                 nn.GELU()
             ) for i in range(num_layers)
         ])
@@ -204,7 +207,7 @@ class VQProsodyEncoder(nn.Module):
         self.vq = VectorQuantiser(
             num_embed=vq_bins,
             embed_dim=vq_dim,
-            commitment_cost=vq_commitment_cost,
+            beta=vq_commitment_cost,
             distance=vq_distance,
             anchor=vq_anchor,
             first_batch=vq_first_batch,

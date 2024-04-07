@@ -53,17 +53,21 @@ model:
           hidden_size: 512
           n_heads: 2
       vqpe:
-        class_path: modules.vqpe.VQProsodyEncoder
+        class_path: new_modules.vq_prosody_encoder.VQProsodyEncoder
         init_args:
-          mel_bins: 80
-          stride: 8
-          hidden_size: 384
+          in_channels: 80  # Number of mel bins
+          hidden_channels: 384
           kernel_size: 5
-          n_stacks: 3
-          n_blocks: 2
-          vq_bins: 1024
-          vq_dim: 256
-          activation: ReLU
+          #init_args:
+          #  mel_bins: 80
+          #  stride: 8
+          #  hidden_size: 384
+          #  kernel_size: 5
+          #  n_stacks: 3
+          #  n_blocks: 2
+          #  vq_bins: 1024
+          #  vq_dim: 256
+          #  activation: ReLU
   D:
     class_path: modules.dscrm.Discriminator
     init_args:
