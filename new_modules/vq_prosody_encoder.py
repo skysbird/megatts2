@@ -161,19 +161,14 @@ class VQProsodyEncoder(nn.Module):
                  in_channels, 
                  hidden_channels,
                  kernel_size, 
-                 num_embeddings, 
-                 embedding_dim, 
-                 commitment_cost,
-                 dim = 256,
-                 bins = 1024,
-                 decay = 0.99,
-                 kmeans_init: bool = True,
-                 kmeans_iters: int = 50,
-                 threshold_ema_dead_code: int = 2,
-                 distance=0.25,
-                 anchor='closest',
-                 first_batch=False,
-                 contras_loss=True
+                 vq_commitment_cost = 0.25,
+                 vq_dim = 256,
+                 vq_bins = 1024,
+                 vq_decay = 0.99,
+                 vq_distance='cos',
+                 vq_anchor='closest',
+                 vq_first_batch=False,
+                 vq_contras_loss=True
                 ):
         super(VQProsodyEncoder, self).__init__()
         num_layers = 5
@@ -207,13 +202,13 @@ class VQProsodyEncoder(nn.Module):
             #      anchor='probrandom', first_batch=False, contras_loss=False):
 
         self.vq = VectorQuantiser(
-            num_embed=bins,
-            embed_dim=hidden_channels,
-            commitment_cost=commitment_cost,
-            distance=distance,
-            anchor=anchor,
-            first_batch=first_batch,
-            contras_loss=contras_loss
+            num_embed=vq_bins,
+            embed_dim=vq_dim,
+            commitment_cost=vq_commitment_cost,
+            distance=vq_distance,
+            anchor=vq_anchor,
+            first_batch=vq_first_batch,
+            contras_loss=vq_contras_loss
         )
         
 
