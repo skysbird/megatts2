@@ -233,6 +233,8 @@ class VQProsodyEncoder(nn.Module):
             x = self.last_conv1d_blocks[i](x)
 
         quantize, loss, (perplexity, encodings, encoding_indices) = self.vq(x)
+        
+        vq_loss = F.mse_loss(x.detach(), quantize)
 
         print("q",quantize.shape)
         quantize = rearrange(quantize, "B D T -> B T D").unsqueeze(2).contiguous().expand(-1, -1, 8 , -1)
@@ -241,7 +243,9 @@ class VQProsodyEncoder(nn.Module):
         print("q",quantize.shape)
         quantize = quantize.permute(0,2,1)
 
-        return quantize, loss, encoding_indices
+
+
+        return quantize, loss, vq_loss, encoding_indices
 
 # Define hyperparameters
 # in_channels = 80  # Number of mel bins
