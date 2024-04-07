@@ -59,7 +59,7 @@ class VQGANTTS(nn.Module):
         self.multihead_attention = nn.MultiheadAttention(embed_dim=512, num_heads=2)
 
         self.mel_decoder = ConvNet(
-            in_channels=mrte.hidden_size + vqpe.vq.embed_dim + content_encoder.d_model,
+            in_channels=mrte.hidden_size + vqpe.vq.dimension + content_encoder.d_model,
             out_channels=mrte.mel_dim,
             hidden_size=hidden_size,
             n_stacks=decoder_n_stack,
