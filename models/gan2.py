@@ -59,7 +59,7 @@ class VQGANTTS(nn.Module):
         self.multihead_attention = nn.MultiheadAttention(embed_dim=512, num_heads=2)
 
         self.mel_decoder = ConvNet(
-            in_channels=mrte.hidden_size + vqpe.vq.dimension,
+            in_channels=mrte.hidden_size + vqpe.vq.dimension + content_encoder.d_model,
             out_channels=mrte.mel_dim,
             hidden_size=hidden_size,
             n_stacks=decoder_n_stack,
@@ -79,8 +79,11 @@ class VQGANTTS(nn.Module):
 
         # Content Encoder forward pass
         # self.content_encoder.forward(src_seq, src_seq)
+        print("t",text.shape)
         content_features = self.content_encoder(text)
-        
+        print("c",content_features.shape)
+        print("d",duration_tokens.shape)
+
         ref_audio = ref_audio.permute(0,2,1)
         ref_audios = ref_audios.permute(0,2,1)
 
@@ -129,6 +132,8 @@ class VQGANTTS(nn.Module):
         #prosody_features =prosody_features.permute(0,2,1)
         print("p",prosody_features.shape)
         content_features = content_features.permute(1,0,2)
+        print("c",content_features.shape)
+        content_features = self.length_regulator(content_features, duration_tokens)  # [ T*target_length, B,mel_dim]
         print("c",content_features.shape)
 
         x = torch.cat([mrte_features, content_features, prosody_features],dim=-1)
