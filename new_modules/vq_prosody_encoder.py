@@ -41,7 +41,10 @@ class VectorQuantiser(nn.Module):
         assert rescale_logits==False, "Only for interface compatible with Gumbel"
         assert return_logits==False, "Only for interface compatible with Gumbel"
         # reshape z -> (batch, height, width, channel) and flatten
-        z = rearrange(z, 'b c h w -> b h w c').contiguous()
+        #z = rearrange(z, 'b c h w -> b h w c').contiguous()
+        print(z.shape)
+        z = rearrange(z, "b d n -> b n d")
+
         z_flattened = z.view(-1, self.embed_dim)
 
         # clculate the distance
@@ -204,7 +207,7 @@ class VQProsodyEncoder(nn.Module):
         self.vq = VectorQuantiser(
             num_embed=vq_bins,
             embed_dim=vq_dim,
-            commitment_cost=vq_commitment_cost,
+            beta=vq_commitment_cost,
             distance=vq_distance,
             anchor=vq_anchor,
             first_batch=vq_first_batch,

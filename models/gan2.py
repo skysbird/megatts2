@@ -114,7 +114,7 @@ class VQGANTTS(nn.Module):
 
         print("m",mrte_features.shape)
         # ref_audio = ref_audio.permute(0,2,1)
-        ref_audio = ref_audio.permute(0,2,1)
+        #ref_audio = ref_audio.permute(0,2,1)
         print("r",ref_audio.shape)
         prosody_features,loss, vq_loss,_  = self.vqpe(ref_audio)
 
