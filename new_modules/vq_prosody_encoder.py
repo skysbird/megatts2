@@ -229,12 +229,12 @@ class VQProsodyEncoder(nn.Module):
         for i in range(self.num_layers):
             x = self.last_conv1d_blocks[i](x)
 
-        quantize, loss, (perplexity, encodings, _) = self.vq(x)
+        quantize, loss, (perplexity, encodings, encoding_indices) = self.vq(x)
 
         quantize = rearrange(quantize, "B D T -> B T D").unsqueeze(2).contiguous().expand(-1, -1, 8 , -1)
         quantize = rearrange(quantize, "B T S D -> B (T S) D")[:, :mel_len, :]
 
-        return quantize, loss, encodings
+        return quantize, loss, encoding_indices
 
 # Define hyperparameters
 # in_channels = 80  # Number of mel bins
