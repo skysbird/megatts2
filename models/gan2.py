@@ -128,7 +128,10 @@ class VQGANTTS(nn.Module):
         #prosody_features = self.up_conv1d(vq_output_repeated)
         #prosody_features =prosody_features.permute(0,2,1)
         print("p",prosody_features.shape)
-        x = torch.cat([mrte_features,prosody_features],dim=-1)
+        content_features = content_features.permute(1,0,2)
+        print("c",content_features.shape)
+
+        x = torch.cat([mrte_features, content_features, prosody_features],dim=-1)
 
         x = x.permute(0,2,1) #B D T
         mel_output = self.mel_decoder(x)
