@@ -43,7 +43,12 @@ class VQGANTTS(nn.Module):
                  content_encoder: FastSpeechContentEncoder,
                  mrte:MRTE2,
                  vqpe: VQProsodyEncoder,
-                 mel_decoder: ConvNet
+                 mel_decoder: ConvNet,
+                 kernel_size = 5,
+                 activation = 'ReLU',
+                 hidden_size = 512,
+                 decoder_n_stack = 4,
+                 decoder_n_block = 2
     ):
         super(VQGANTTS, self).__init__()
         self.content_encoder = content_encoder # ContentEncoder()
@@ -55,6 +60,15 @@ class VQGANTTS(nn.Module):
         self.up_conv1d = nn.Conv1d(384 * self.repeat_times, 512, kernel_size=1)
         self.multihead_attention = nn.MultiheadAttention(embed_dim=512, num_heads=2)
 
+        self.decoder = ConvNet(
+            in_channels=mrte.hidden_size + vqpe.vq.dimension,
+            out_channels=mrte.mel_dim,
+            hidden_size=hidden_size,
+            n_stacks=decoder_n_stack,
+            n_blocks=decoder_n_block,
+            kernel_size=kernel_size,
+            activation=activation,
+        )
 
     def mask_tensor(self, mel_output, position, mel_max_length):
         lengths = torch.max(position, -1)[0]
