@@ -114,7 +114,8 @@ class VQGANTTS(nn.Module):
 
         print("m",mrte_features.shape)
         # ref_audio = ref_audio.permute(0,2,1)
-        # ref_audio = ref_audio.permute(0,2,1)
+        #old vq
+        ref_audio = ref_audio.permute(0,2,1) #old vq
         print("r",ref_audio.shape)
         #return zq, commit_loss, vq_loss, codes
 
