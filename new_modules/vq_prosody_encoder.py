@@ -187,7 +187,13 @@ class VQProsodyEncoder(nn.Module):
                 nn.GELU()
             ) for i in range(num_layers)
         ])
+<<<<<<< HEAD
         self.pool = nn.MaxPool1d(kernel_size=8, stride=8, padding=0,ceil_mode=True)
+=======
+
+        self.pool = nn.MaxPool1d(kernel_size=8, stride=8, padding=0,ceil_mode=True)
+
+>>>>>>> 8df25be80bdab9c706deba8c0f552f0a5058840b
 
         self.last_conv1d_blocks = nn.ModuleList([
             nn.Sequential(
@@ -219,6 +225,10 @@ class VQProsodyEncoder(nn.Module):
         # Assuming mel_spec is of shape (batch_size, channels, time)
         #x = self.conv1d(mel_spec)  # Apply Conv1D
         mel_len = mel_spec.size(2)
+<<<<<<< HEAD
+=======
+        print("ml",mel_spec.shape)
+>>>>>>> 8df25be80bdab9c706deba8c0f552f0a5058840b
 
         x = mel_spec
         for i in range(self.num_layers):
@@ -231,9 +241,17 @@ class VQProsodyEncoder(nn.Module):
 
         quantize, loss, (perplexity, encodings, encoding_indices) = self.vq(x)
 
+        print("q",quantize.shape)
         quantize = rearrange(quantize, "B D T -> B T D").unsqueeze(2).contiguous().expand(-1, -1, 8 , -1)
+        print("q",quantize.shape)
         quantize = rearrange(quantize, "B T S D -> B (T S) D")[:, :mel_len, :]
+<<<<<<< HEAD
         quantize = quantize.permute(0,2,1)
+=======
+        print("q",quantize.shape)
+        quantize = quantize.permute(0,2,1)
+
+>>>>>>> 8df25be80bdab9c706deba8c0f552f0a5058840b
         return quantize, loss, encoding_indices
 
 # Define hyperparameters
