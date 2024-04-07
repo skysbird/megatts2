@@ -177,7 +177,7 @@ class MRTE(nn.Module):
             phone_lens: torch.Tensor,  # (B,)
             mel: torch.Tensor,  # (B, T, mel_bins)
     ):
-        tc_latent = self.tc_latent(phone, phone_lens, mel)
+        tc_latent = self.tc_latent(phone,  mel)
         
         out = self.length_regulator(tc_latent, duration_tokens)
         return out

@@ -7,7 +7,7 @@ from modules.datamodule import TTSDataModule, test
 
 
 def cli_main():
-    cli = LightningCLI(MegaADMTrainer, TTSDataModule)
+    cli = LightningCLI(MegaGANTrainer, TTSDataModule)
 
 if __name__ == "__main__":
     cli_main()

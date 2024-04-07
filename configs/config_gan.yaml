@@ -96,7 +96,7 @@ model:
   train_dtype: bfloat16
   class_path: models.trainer.MegaGANTrainer
 data:
-  ds_path: /root/autodl-tmp/megatts2/data/ds/
+  ds_path: /data/sky/data/ds/
   max_duration_batch: 60
   min_duration: 2.1
   max_duration: 20
