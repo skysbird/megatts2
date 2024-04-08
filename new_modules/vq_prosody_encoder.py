@@ -292,8 +292,10 @@ class VQProsodyEncoder(nn.Module):
         x = self.pool(x) 
 
         x = self.last_conv1d_blocks[0](x)
-        for i in range(1, self.num_layers):
+        for i in range(1, self.num_layers-1):
             x = x + self.last_conv1d_blocks[i](x)
+
+        x = self.last_conv1d_blocks[self.num_layers - 1](x)
 
         #old vq
         # x = self.convnet(mel)
