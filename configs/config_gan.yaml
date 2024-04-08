@@ -61,15 +61,21 @@ model:
           #  vq_distance: l2
           #  vq_contras_loss: false
         init_args:
-          mel_bins: 80
+          mel_bins: 20
           stride: 8
           hidden_size: 384
           kernel_size: 5
-          n_stacks: 3
+          n_layers: 3
+          n_stacks: 5
           n_blocks: 2
           vq_bins: 1024
           vq_dim: 256
           activation: ReLU
+      kernel_size: 5
+      activation: ReLU
+      hidden_size: 512
+      decoder_n_stack: 4
+      decoder_n_block: 2
   D:
     class_path: modules.dscrm.Discriminator
     init_args:

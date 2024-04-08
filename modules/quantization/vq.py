@@ -14,7 +14,7 @@ import torch
 from torch import nn
 
 from .core_vq import ResidualVectorQuantization
-
+from new_modules.vq_prosody_encoder import VectorQuantiser
 
 @dataclass
 class QuantizedResult:
@@ -56,14 +56,23 @@ class ResidualVectorQuantizer(nn.Module):
         self.kmeans_init = kmeans_init
         self.kmeans_iters = kmeans_iters
         self.threshold_ema_dead_code = threshold_ema_dead_code
-        self.vq = ResidualVectorQuantization(
-            dim=self.dimension,
-            codebook_size=self.bins,
-            num_quantizers=self.n_q,
-            decay=self.decay,
-            kmeans_init=self.kmeans_init,
-            kmeans_iters=self.kmeans_iters,
-            threshold_ema_dead_code=self.threshold_ema_dead_code,
+        # self.vq = ResidualVectorQuantization(
+        #     dim=self.dimension,
+        #     codebook_size=self.bins,
+        #     num_quantizers=self.n_q,
+        #     decay=self.decay,
+        #     kmeans_init=self.kmeans_init,
+        #     kmeans_iters=self.kmeans_iters,
+        #     threshold_ema_dead_code=self.threshold_ema_dead_code,
+        # )
+        #def __init__(self, num_embed, embed_dim, beta, distance='cos', 
+            #      anchor='probrandom', first_batch=False, contras_loss=False):
+
+        self.vq = VectorQuantiser(
+            embed_dim= self.dimension,
+            num_embed= self.bins,
+            beta=0.25,
+            distance='l2'
         )
 
     def forward(self, x: torch.Tensor) -> QuantizedResult:
