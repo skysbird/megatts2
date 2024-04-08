@@ -234,7 +234,7 @@ class VQProsodyEncoder(nn.Module):
         #x = self.conv1d(mel_spec)  # Apply Conv1D
         mel_len = mel_spec.size(2)
         print("ml",mel_spec.shape)
-        mel = mel[:, :self.input_channels,:]
+        mel_spec = mel_spec[:, :self.input_channels,:]
 
         x = mel_spec
         for i in range(self.num_layers):
