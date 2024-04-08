@@ -284,13 +284,16 @@ class VQProsodyEncoder(nn.Module):
         mel_spec = mel_spec[:, :self.input_channels,:]
 
         x = mel_spec
-        for i in range(self.num_layers):
-            x = self.conv1d_blocks[i](x)
+        x = self.conv1d_blocks[0](x)
+
+        for i in range(1, self.num_layers):
+            x = x + self.conv1d_blocks[i](x)
         
         x = self.pool(x) 
 
-        for i in range(self.num_layers):
-            x = self.last_conv1d_blocks[i](x)
+        x = self.last_conv1d_blocks[0](x)
+        for i in range(1, self.num_layers):
+            x = x + self.last_conv1d_blocks[i](x)
 
         #old vq
         # x = self.convnet(mel)
