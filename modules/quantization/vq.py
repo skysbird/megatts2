@@ -82,7 +82,7 @@ class ResidualVectorQuantizer(nn.Module):
             kmeans_init=self.kmeans_init,
             kmeans_iters=self.kmeans_iters,
             threshold_ema_dead_code=self.threshold_ema_dead_code,
-        ) #new vq
+        ) #old vq
             
         
 
