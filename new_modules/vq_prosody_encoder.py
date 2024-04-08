@@ -243,7 +243,7 @@ class VQProsodyEncoder(nn.Module):
             n_blocks=2,
             middle_layer=nn.MaxPool1d(8, ceil_mode=True),
             kernel_size=kernel_size,
-            activation='ReLU',
+            activation='GELU',
         )
 
         # self.conv1d = nn.Conv1d(in_channels, hidden_channels, kernel_size, padding=kernel_size//2)
