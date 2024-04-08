@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from .mrte2 import LayerNormChannels
 from einops import rearrange
+from modules.convnet import ConvNetDouble
 
 class VectorQuantiser(nn.Module):
     """
@@ -213,6 +214,24 @@ class VQProsodyEncoder(nn.Module):
                 nn.GELU()
             ) for i in range(num_layers)
         ])
+
+
+#  n_layers: int = 3,
+#             n_stacks: int = 5,
+#             n_blocks: int = 2,
+        #use facebook
+        self.convnet = ConvNetDouble(
+            in_channels=in_channels,
+            out_channels=vq_dim,
+            hidden_size=hidden_channels,
+            n_layers=num_layers,
+            n_stacks=5,
+            n_blocks=2,
+            middle_layer=nn.MaxPool1d(8, ceil_mode=True),
+            kernel_size=kernel_size,
+            activation='ReLU',
+        )
+
         # self.conv1d = nn.Conv1d(in_channels, hidden_channels, kernel_size, padding=kernel_size//2)
         # self.vq = VectorQuantizer(hidden_channels, num_embeddings, embedding_dim, commitment_cost)
             # def __init__(self, num_embed, embed_dim, beta, distance='cos', 
@@ -236,14 +255,18 @@ class VQProsodyEncoder(nn.Module):
         print("ml",mel_spec.shape)
         mel_spec = mel_spec[:, :self.input_channels,:]
 
-        x = mel_spec
-        for i in range(self.num_layers):
-            x = self.conv1d_blocks[i](x)
+        # x = mel_spec
+        # for i in range(self.num_layers):
+        #     x = self.conv1d_blocks[i](x)
         
-        x = self.pool(x) 
+        # x = self.pool(x) 
 
-        for i in range(self.num_layers):
-            x = self.last_conv1d_blocks[i](x)
+        # for i in range(self.num_layers):
+        #     x = self.last_conv1d_blocks[i](x)
+
+        #old vq
+        x = self.convnet(mel)
+
 
         quantize, loss, (perplexity, encodings, encoding_indices) = self.vq(x)
         
