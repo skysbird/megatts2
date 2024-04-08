@@ -253,7 +253,7 @@ class VQProsodyEncoder(nn.Module):
         print("q",quantize.shape)
         quantize = quantize.permute(0,2,1)
 
-
+        #prosody_features,loss,vq_loss, _
 
         return quantize, loss, vq_loss, encoding_indices
 
