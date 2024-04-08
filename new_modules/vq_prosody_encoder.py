@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from .mrte2 import LayerNormChannels
 from einops import rearrange
 from modules.convnet import ConvNetDouble
+from modules.quantization.vq import VectorQuantization
 
 class VectorQuantiser(nn.Module):
     """
@@ -197,7 +198,14 @@ class VQProsodyEncoder(nn.Module):
                           kernel_size=kernel_size,
                           padding=kernel_size // 2),
                 LayerNormChannels(hidden_channels),
+                nn.GELU(),
+                nn.Conv1d(hidden_channels,
+                          out_channels=hidden_channels,
+                          kernel_size=kernel_size,
+                          padding=kernel_size // 2),
+                LayerNormChannels(hidden_channels),
                 nn.GELU()
+
             ) for i in range(num_layers)
         ])
 
@@ -206,6 +214,12 @@ class VQProsodyEncoder(nn.Module):
 
         self.last_conv1d_blocks = nn.ModuleList([
             nn.Sequential(
+                nn.Conv1d(hidden_channels,
+                          out_channels=hidden_channels,
+                          kernel_size=kernel_size,
+                          padding=kernel_size // 2),
+                LayerNormChannels(hidden_channels),
+                nn.GELU(),
                 nn.Conv1d(hidden_channels,
                           out_channels= vq_dim if (i == num_layers - 1) else hidden_channels,
                           kernel_size=kernel_size,
@@ -220,32 +234,46 @@ class VQProsodyEncoder(nn.Module):
 #             n_stacks: int = 5,
 #             n_blocks: int = 2,
         #use facebook
-        self.convnet = ConvNetDouble(
-            in_channels=in_channels,
-            out_channels=vq_dim,
-            hidden_size=hidden_channels,
-            n_layers=num_layers,
-            n_stacks=5,
-            n_blocks=2,
-            middle_layer=nn.MaxPool1d(8, ceil_mode=True),
-            kernel_size=kernel_size,
-            activation='ReLU',
-        )
+        # self.convnet = ConvNetDouble(
+        #     in_channels=in_channels,
+        #     out_channels=vq_dim,
+        #     hidden_size=hidden_channels,
+        #     n_layers=num_layers,
+        #     n_stacks=5,
+        #     n_blocks=2,
+        #     middle_layer=nn.MaxPool1d(8, ceil_mode=True),
+        #     kernel_size=kernel_size,
+        #     activation='ReLU',
+        # )
 
         # self.conv1d = nn.Conv1d(in_channels, hidden_channels, kernel_size, padding=kernel_size//2)
         # self.vq = VectorQuantizer(hidden_channels, num_embeddings, embedding_dim, commitment_cost)
             # def __init__(self, num_embed, embed_dim, beta, distance='cos', 
             #      anchor='probrandom', first_batch=False, contras_loss=False):
 
-        self.vq = VectorQuantiser(
-            num_embed=vq_bins,
-            embed_dim=vq_dim,
-            beta=vq_commitment_cost,
-            distance=vq_distance,
-            anchor=vq_anchor,
-            first_batch=vq_first_batch,
-            contras_loss=vq_contras_loss
-        )
+        # self.vq = VectorQuantiser(
+        #     num_embed=vq_bins,
+        #     embed_dim=vq_dim,
+        #     beta=vq_commitment_cost,
+        #     distance=vq_distance,
+        #     anchor=vq_anchor,
+        #     first_batch=vq_first_batch,
+        #     contras_loss=vq_contras_loss
+        # )
+
+
+# kmeans_init: bool = True,
+#         kmeans_iters: int = 50,
+#         threshold_ema_dead_code: int = 2,
+        
+        self.vq = VectorQuantization(
+            dim=vq_dim,
+            codebook_size=vq_bins,
+            decay=vq_decay,
+            kmeans_init=True,
+            kmeans_iters=50,
+            threshold_ema_dead_code=2,
+        ) #old vq
         
 
     def forward(self, mel_spec):
@@ -255,20 +283,23 @@ class VQProsodyEncoder(nn.Module):
         print("ml",mel_spec.shape)
         mel_spec = mel_spec[:, :self.input_channels,:]
 
-        # x = mel_spec
-        # for i in range(self.num_layers):
-        #     x = self.conv1d_blocks[i](x)
+        x = mel_spec
+        for i in range(self.num_layers):
+            x = self.conv1d_blocks[i](x)
         
-        # x = self.pool(x) 
+        x = self.pool(x) 
 
-        # for i in range(self.num_layers):
-        #     x = self.last_conv1d_blocks[i](x)
+        for i in range(self.num_layers):
+            x = self.last_conv1d_blocks[i](x)
 
         #old vq
-        x = self.convnet(mel_spec)
+        # x = self.convnet(mel)
 
 
-        quantize, loss, (perplexity, encodings, encoding_indices) = self.vq(x)
+        #quantize, loss, (perplexity, encodings, encoding_indices) = self.vq(x) #new vq
+
+        quantize, encoding_indices, loss = self.vq(x) #old vq
+
         
         vq_loss = F.mse_loss(x.detach(), quantize)
 

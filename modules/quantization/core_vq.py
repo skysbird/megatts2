@@ -261,7 +261,7 @@ class VectorQuantization(nn.Module):
     ):
         super().__init__()
         _codebook_dim: int = default(codebook_dim, dim)
-
+        self.dimension = dim
         requires_projection = _codebook_dim != dim
         self.project_in = (nn.Linear(dim, _codebook_dim) if requires_projection else nn.Identity())
         self.project_out = (nn.Linear(_codebook_dim, dim) if requires_projection else nn.Identity())
