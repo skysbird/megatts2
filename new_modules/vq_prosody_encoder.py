@@ -234,17 +234,17 @@ class VQProsodyEncoder(nn.Module):
 #             n_stacks: int = 5,
 #             n_blocks: int = 2,
         #use facebook
-        # self.convnet = ConvNetDouble(
-        #     in_channels=in_channels,
-        #     out_channels=vq_dim,
-        #     hidden_size=hidden_channels,
-        #     n_layers=num_layers,
-        #     n_stacks=5,
-        #     n_blocks=2,
-        #     middle_layer=nn.MaxPool1d(8, ceil_mode=True),
-        #     kernel_size=kernel_size,
-        #     activation='ReLU',
-        # )
+        self.convnet = ConvNetDouble(
+            in_channels=in_channels,
+            out_channels=vq_dim,
+            hidden_size=hidden_channels,
+            n_layers=num_layers,
+            n_stacks=5,
+            n_blocks=2,
+            middle_layer=nn.MaxPool1d(8, ceil_mode=True),
+            kernel_size=kernel_size,
+            activation='ReLU',
+        )
 
         # self.conv1d = nn.Conv1d(in_channels, hidden_channels, kernel_size, padding=kernel_size//2)
         # self.vq = VectorQuantizer(hidden_channels, num_embeddings, embedding_dim, commitment_cost)
@@ -284,19 +284,19 @@ class VQProsodyEncoder(nn.Module):
         mel_spec = mel_spec[:, :self.input_channels,:]
 
         x = mel_spec
-        x = self.conv1d_blocks[0](x)
+        # x = self.conv1d_blocks[0](x)
 
-        for i in range(1, self.num_layers):
-            x = x + self.conv1d_blocks[i](x)
+        # for i in range(1, self.num_layers):
+        #     x = x + self.conv1d_blocks[i](x)
         
-        x = self.pool(x) 
+        # x = self.pool(x) 
 
-        x = self.last_conv1d_blocks[0](x)
-        for i in range(1, self.num_layers):
-            x = x + self.last_conv1d_blocks[i](x)
+        # x = self.last_conv1d_blocks[0](x)
+        # for i in range(1, self.num_layers):
+        #     x = x + self.last_conv1d_blocks[i](x)
 
         #old vq
-        # x = self.convnet(mel)
+        x = self.convnet(x)
 
 
         #quantize, loss, (perplexity, encodings, encoding_indices) = self.vq(x) #new vq
