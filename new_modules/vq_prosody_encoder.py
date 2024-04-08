@@ -185,6 +185,7 @@ class VQProsodyEncoder(nn.Module):
                 ):
         super(VQProsodyEncoder, self).__init__()
         num_layers = 5
+        self.input_channels = in_channels
 
         self.num_layers = num_layers
         self.conv1d_blocks = nn.ModuleList([
@@ -232,6 +233,7 @@ class VQProsodyEncoder(nn.Module):
         #x = self.conv1d(mel_spec)  # Apply Conv1D
         mel_len = mel_spec.size(2)
         print("ml",mel_spec.shape)
+        mel = mel[:, :self.input_channels,:]
 
         x = mel_spec
         for i in range(self.num_layers):
