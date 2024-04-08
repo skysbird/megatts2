@@ -87,6 +87,7 @@ class ResidualVectorQuantizer(nn.Module):
                 the associated bandwidth and any penalty term for the loss.
         """
         # quantized, codes, commit_loss = self.vq(x, n_q=self.n_q) #old vq
+        print("xxx",x.shape)
         quantized, commit_loss, (_,_,codes) = self.vq(x) #new vq
         #        return z_q, loss, (perplexity, min_encodings, encoding_indices)
 

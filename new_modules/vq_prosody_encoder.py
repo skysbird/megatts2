@@ -42,9 +42,10 @@ class VectorQuantiser(nn.Module):
         assert return_logits==False, "Only for interface compatible with Gumbel"
         # reshape z -> (batch, height, width, channel) and flatten
         #z = rearrange(z, 'b c h w -> b h w c').contiguous()
-        print(z.shape)
         z = rearrange(z, "b d n -> b n d")
-
+        print(z.shape)
+        print(self.embed_dim)
+        z = z.contiguous()
         z_flattened = z.view(-1, self.embed_dim)
 
         print("dis",self.distance)
@@ -71,8 +72,16 @@ class VectorQuantiser(nn.Module):
         z_q = torch.matmul(encodings, self.embedding.weight).view(z.shape)
         # compute loss for embedding
         loss = self.beta * torch.mean((z_q.detach()-z)**2) + torch.mean((z_q - z.detach()) ** 2)
+  
         # preserve gradients
         z_q = z + (z_q - z).detach()
+
+
+        commit_loss = F.mse_loss(z_q.detach(), z)
+        print("loss",loss)
+
+        print("com",commit_loss)
+
         # reshape back to match original input shape
         z_q = rearrange(z_q, 'b n d -> b d n').contiguous()
         # count
