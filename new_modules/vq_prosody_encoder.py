@@ -265,7 +265,7 @@ class VQProsodyEncoder(nn.Module):
         #     x = self.last_conv1d_blocks[i](x)
 
         #old vq
-        x = self.convnet(mel)
+        x = self.convnet(mel_spec)
 
 
         quantize, loss, (perplexity, encodings, encoding_indices) = self.vq(x)
