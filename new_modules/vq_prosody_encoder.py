@@ -22,6 +22,7 @@ class VectorQuantiser(nn.Module):
 
         self.num_embed = num_embed
         self.embed_dim = embed_dim
+        self.dimension = embed_dim
         self.beta = beta
         self.distance = distance
         self.anchor = anchor
