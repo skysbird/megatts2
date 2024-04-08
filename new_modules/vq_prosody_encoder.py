@@ -254,7 +254,7 @@ class VQProsodyEncoder(nn.Module):
         print("q",quantize.shape)
         quantize = rearrange(quantize, "B T S D -> B (T S) D")[:, :mel_len, :]
         print("q",quantize.shape)
-        quantize = quantize.permute(0,2,1)
+        #quantize = quantize.permute(0,2,1)
 
         #prosody_features,loss,vq_loss, _
 
