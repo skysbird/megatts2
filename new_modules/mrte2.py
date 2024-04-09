@@ -99,6 +99,65 @@ class LayerNormChannels(nn.Module):
         x = x.permute(0, 2, 1)
         return x
 
+
+
+class ResidualBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size):
+        super(ResidualBlock, self).__init__()
+        self.conv1 = nn.Conv1d(in_channels, out_channels, kernel_size, padding=kernel_size//2)
+        self.ln = nn.LayerNorm(out_channels)
+        self.gelu = nn.GELU()
+        self.conv2 = nn.Conv1d(out_channels, out_channels, kernel_size, padding=kernel_size//2)
+        # 适配器层，以确保残差连接的维度匹配
+        self.adapter = nn.Conv1d(in_channels, out_channels, 1) if in_channels != out_channels else nn.Identity()
+
+    def forward(self, x):
+        # 残差连接的输入
+        residual = self.adapter(x)
+
+        # 第一次Conv1D + LayerNorm + GELU
+        x = self.conv1(x)
+        x = self.ln(x.permute(0, 2, 1)).permute(0, 2, 1)  # 调整维度以匹配LayerNorm的期望输入
+        x = self.gelu(x)
+
+        # 第二次Conv1D + LayerNorm + GELU
+        x = self.conv2(x)
+        x = self.ln(x.permute(0, 2, 1)).permute(0, 2, 1)
+        x = self.gelu(x)
+
+        # 残差连接的输出
+        return x + residual
+
+
+class ResidualBlock2(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size):
+        super(ResidualBlock2, self).__init__()
+        self.conv1 = nn.Conv1d(in_channels, in_channels, kernel_size, padding=kernel_size//2)
+        self.ln = nn.LayerNorm(in_channels)
+        self.gelu = nn.GELU()
+        self.conv2 = nn.Conv1d(in_channels, out_channels, kernel_size, padding=kernel_size//2)
+        self.ln2 = nn.LayerNorm(out_channels)
+        # 适配器层，以确保残差连接的维度匹配
+        self.adapter = nn.Conv1d(in_channels, out_channels, 1) if in_channels != out_channels else nn.Identity()
+
+    def forward(self, x):
+        # 残差连接的输入
+        residual = self.adapter(x)
+
+        # 第一次Conv1D + LayerNorm + GELU
+        x = self.conv1(x)
+        x = self.ln(x.permute(0, 2, 1)).permute(0, 2, 1)  # 调整维度以匹配LayerNorm的期望输入
+        x = self.gelu(x)
+
+        # 第二次Conv1D + LayerNorm + GELU
+        x = self.conv2(x)
+        x = self.ln2(x.permute(0, 2, 1)).permute(0, 2, 1)
+        x = self.gelu(x)
+
+        # 残差连接的输出
+        return x + residual
+    
+    
 # 定义一个MRTE，这里我们假设Mel Encoder输出和Multi-Head Attention的结构和维度
 class MRTE2(nn.Module):
     def __init__(self, mel_dim, global_mel_dim, hidden_size, n_heads):
@@ -109,24 +168,18 @@ class MRTE2(nn.Module):
         num_layers = 5
         self.conv_blocks = nn.ModuleList([
             nn.Sequential(
-                nn.Conv1d(mel_dim if i == 0 else hidden_size, hidden_size, kernel_size, padding=kernel_size//2),
-                LayerNormChannels(hidden_size),
-                nn.GELU(),
-                nn.Conv1d(hidden_size, hidden_size, kernel_size, padding=kernel_size//2),
-                LayerNormChannels(hidden_size),
-                nn.GELU()
+                ResidualBlock(in_channels=mel_dim if i == 0 else hidden_size,
+                          out_channels=hidden_size,
+                          kernel_size=kernel_size)
             ) for i in range(num_layers)
         ])
 
 
         self.last_conv_blocks = nn.ModuleList([
             nn.Sequential(
-                nn.Conv1d(hidden_size, hidden_size, kernel_size, padding=kernel_size//2),
-                LayerNormChannels(hidden_size),
-                nn.GELU(),
-                nn.Conv1d(hidden_size, hidden_size, kernel_size, padding=kernel_size//2),
-                LayerNormChannels(hidden_size),
-                nn.GELU()
+                ResidualBlock2(hidden_size,
+                          out_channels= hidden_size,
+                          kernel_size=kernel_size)
             ) for i in range(num_layers)
         ])
 
