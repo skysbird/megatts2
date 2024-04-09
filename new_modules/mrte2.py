@@ -110,6 +110,7 @@ class ResidualBlock(nn.Module):
         self.conv2 = nn.Conv1d(out_channels, out_channels, kernel_size, padding=kernel_size//2)
         # 适配器层，以确保残差连接的维度匹配
         self.adapter = nn.Conv1d(in_channels, out_channels, 1) if in_channels != out_channels else nn.Identity()
+        self.dropout = nn.Dropout(0.1)
 
     def forward(self, x):
         # 残差连接的输入
@@ -117,13 +118,15 @@ class ResidualBlock(nn.Module):
 
         # 第一次Conv1D + LayerNorm + GELU
         x = self.conv1(x)
-        x = self.ln(x.permute(0, 2, 1)).permute(0, 2, 1)  # 调整维度以匹配LayerNorm的期望输入
         x = self.gelu(x)
+        x = self.dropout(x)
+        x = self.ln(x.permute(0, 2, 1)).permute(0, 2, 1)  # 调整维度以匹配LayerNorm的期望输入
 
         # 第二次Conv1D + LayerNorm + GELU
         x = self.conv2(x)
-        x = self.ln(x.permute(0, 2, 1)).permute(0, 2, 1)
         x = self.gelu(x)
+        x = self.dropout(x)
+        x = self.ln(x.permute(0, 2, 1)).permute(0, 2, 1)
 
         # 残差连接的输出
         return x + residual
