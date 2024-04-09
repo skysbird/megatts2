@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .mrte2 import LayerNormChannels
+# from .mrte2 import LayerNormChannels
 from einops import rearrange
 from modules.convnet import ConvNetDouble
 from modules.quantization.vq import VectorQuantization
@@ -387,3 +387,34 @@ class VQProsodyEncoder(nn.Module):
 # num_embeddings = 1024
 # embedding_dim = 256
 # commit
+# Instantiate the module
+    
+
+num_embeddings = 64
+embedding_dim = 128
+commitment_cost = 0.25
+vector_quantiser = VectorQuantiser(num_embeddings, embedding_dim, commitment_cost)
+
+# Dummy input tensor representing (batch, channels, height)
+inputs = torch.randn(4, embedding_dim, 32)
+
+# Pass inputs through the vector quantiser
+quantized_outputs, vq_loss, (p,encodings,idn) = vector_quantiser(inputs)
+#        return z_q, loss, (perplexity, min_encodings, encoding_indices)
+
+# Print the shapes of outputs
+print(f"Quantized outputs shape: {quantized_outputs.shape}")
+print(f"VQ loss: {vq_loss.item()}")
+print(f"Encodings shape: {encodings.shape}")
+print(f"perplexity shape: {p}")
+print(f"indices shape: {idn.shape}")
+
+vector_quantiser = VectorQuantization(embedding_dim, num_embeddings)
+
+#quantize, embed_ind, loss
+quantized_outputs, idn, vq_loss = vector_quantiser(inputs)
+
+print("---------")
+print(f"Quantized outputs shape: {quantized_outputs.shape}")
+print(f"VQ loss: {vq_loss.item()}")
+print(f"indices shape: {idn.shape}")
