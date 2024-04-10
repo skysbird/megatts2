@@ -350,7 +350,7 @@ class VQProsodyEncoder(nn.Module):
         for i in range(self.num_layers):
             x = self.conv1d_blocks[i](x)
             x = F.dropout(x,0.1)
-            x = F.layer_norm(x.permute(0, 2, 1),x.shape[2] ).permute(0, 2, 1)  # 调整维度以匹配LayerNorm的期望输入
+            x = F.layer_norm(x.permute(0, 2, 1),(x.shape[2],) ).permute(0, 2, 1)  # 调整维度以匹配LayerNorm的期望输入
             x = F.relu(x)
         
         x = self.pool(x) 
@@ -358,7 +358,7 @@ class VQProsodyEncoder(nn.Module):
         for i in range(self.num_layers):
             x = self.last_conv1d_blocks[i](x)
             x = F.dropout(x,0.1)
-            x = F.layer_norm(x.permute(0, 2, 1),x.shape[2] ).permute(0, 2, 1)  # 调整维度以匹配LayerNorm的期望输入
+            x = F.layer_norm(x.permute(0, 2, 1),(x.shape[2],) ).permute(0, 2, 1)  # 调整维度以匹配LayerNorm的期望输入
             x = F.relu(x)
 
         #old vq
