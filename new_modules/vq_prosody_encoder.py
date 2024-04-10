@@ -74,13 +74,13 @@ class VectorQuantiser(nn.Module):
         # quantise and unflatten
         z_q = torch.matmul(encodings, self.embedding.weight).view(z.shape)
         # compute loss for embedding
-        #loss = self.beta * torch.mean((z_q.detach()-z)**2) + torch.mean((z_q - z.detach()) ** 2)
+        loss = self.beta * torch.mean((z_q.detach()-z)**2) + torch.mean((z_q - z.detach()) ** 2)
   
         # preserve gradients
         z_q = z + (z_q - z).detach()
 
 
-        loss = F.mse_loss(z_q.detach(), z)
+        # loss = F.mse_loss(z_q.detach(), z)
         print("loss",loss)
 
         #print("com",commit_loss)
@@ -201,15 +201,15 @@ class ResidualBlock(nn.Module):
 
         # 第一次Conv1D + LayerNorm + GELU
         x = self.conv1(x)
-        x = self.gelu(x)
         x = self.dropout(x)
         x = self.ln(x.permute(0, 2, 1)).permute(0, 2, 1)  # 调整维度以匹配LayerNorm的期望输入
+        x = self.gelu(x)
 
         # 第二次Conv1D + LayerNorm + GELU
         x = self.conv2(x)
-        x = self.gelu(x)
         x = self.dropout(x)
         x = self.ln(x.permute(0, 2, 1)).permute(0, 2, 1)
+        x = self.gelu(x)
 
         # 残差连接的输出
         return x + residual
@@ -233,15 +233,15 @@ class ResidualBlock2(nn.Module):
 
         # 第一次Conv1D + LayerNorm + GELU
         x = self.conv1(x)
-        x = self.gelu(x)
         x = self.dropout(x)
         x = self.ln(x.permute(0, 2, 1)).permute(0, 2, 1)  # 调整维度以匹配LayerNorm的期望输入
+        x = self.gelu(x)
 
         # 第二次Conv1D + LayerNorm + GELU
         x = self.conv2(x)
-        x = self.gelu(x)
         x = self.dropout(x)
         x = self.ln2(x.permute(0, 2, 1)).permute(0, 2, 1)
+        x = self.gelu(x)
 
         # 残差连接的输出
         return x + residual
@@ -349,12 +349,17 @@ class VQProsodyEncoder(nn.Module):
 
         for i in range(self.num_layers):
             x = self.conv1d_blocks[i](x)
+            x = F.dropout(x,0.1)
+            x = F.layer_norm(x.permute(0, 2, 1),x.shape[2] ).permute(0, 2, 1)  # 调整维度以匹配LayerNorm的期望输入
+            x = F.relu(x)
         
         x = self.pool(x) 
 
         for i in range(self.num_layers):
             x = self.last_conv1d_blocks[i](x)
-
+            x = F.dropout(x,0.1)
+            x = F.layer_norm(x.permute(0, 2, 1),x.shape[2] ).permute(0, 2, 1)  # 调整维度以匹配LayerNorm的期望输入
+            x = F.relu(x)
 
         #old vq
         # x = self.convnet(x)
