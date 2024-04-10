@@ -74,16 +74,16 @@ class VectorQuantiser(nn.Module):
         # quantise and unflatten
         z_q = torch.matmul(encodings, self.embedding.weight).view(z.shape)
         # compute loss for embedding
-        loss = self.beta * torch.mean((z_q.detach()-z)**2) + torch.mean((z_q - z.detach()) ** 2)
+        #loss = self.beta * torch.mean((z_q.detach()-z)**2) + torch.mean((z_q - z.detach()) ** 2)
   
         # preserve gradients
         z_q = z + (z_q - z).detach()
 
 
-        commit_loss = F.mse_loss(z_q.detach(), z)
+        loss = F.mse_loss(z_q.detach(), z)
         print("loss",loss)
 
-        print("com",commit_loss)
+        #print("com",commit_loss)
 
         # reshape back to match original input shape
         z_q = rearrange(z_q, 'b n d -> b d n').contiguous()
@@ -313,15 +313,15 @@ class VQProsodyEncoder(nn.Module):
             # def __init__(self, num_embed, embed_dim, beta, distance='cos', 
             #      anchor='probrandom', first_batch=False, contras_loss=False):
 
-        #self.vq = VectorQuantiser(
-        #    num_embed=vq_bins,
-        #    embed_dim=vq_dim,
-        #    beta=vq_commitment_cost,
-        #    distance=vq_distance,
-        #    anchor=vq_anchor,
-        #    first_batch=vq_first_batch,
-        #    contras_loss=vq_contras_loss
-        #)
+        self.vq = VectorQuantiser(
+            num_embed=vq_bins,
+            embed_dim=vq_dim,
+            beta=vq_commitment_cost,
+            distance=vq_distance,
+            anchor=vq_anchor,
+            first_batch=vq_first_batch,
+            contras_loss=vq_contras_loss
+        )
 
 
 # kmeans_init: bool = True,
