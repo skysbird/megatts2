@@ -268,7 +268,7 @@ class VQProsodyEncoder(nn.Module):
                  vq_contras_loss=True
                 ):
         super(VQProsodyEncoder, self).__init__()
-        num_layers = 5
+        num_layers = 8
         self.input_channels = in_channels
 
         self.num_layers = num_layers
@@ -296,17 +296,17 @@ class VQProsodyEncoder(nn.Module):
 #             n_stacks: int = 5,
 #             n_blocks: int = 2,
         #use facebook
-        # self.convnet = ConvNetDouble(
-        #     in_channels=in_channels,
-        #     out_channels=vq_dim,
-        #     hidden_size=hidden_channels,
-        #     n_layers=num_layers,
-        #     n_stacks=5,
-        #     n_blocks=2,
-        #     middle_layer=nn.MaxPool1d(8, ceil_mode=True),
-        #     kernel_size=kernel_size,
-        #     activation='GELU',
-        # )
+        self.convnet = ConvNetDouble(
+            in_channels=in_channels,
+            out_channels=vq_dim,
+            hidden_size=hidden_channels,
+            n_layers=num_layers,
+            n_stacks=5,
+            n_blocks=2,
+            middle_layer=nn.MaxPool1d(8, ceil_mode=True),
+            kernel_size=kernel_size,
+            activation='GELU',
+        )
 
         # # self.conv1d = nn.Conv1d(in_channels, hidden_channels, kernel_size, padding=kernel_size//2)
         # # self.vq = VectorQuantizer(hidden_channels, num_embeddings, embedding_dim, commitment_cost)
@@ -347,41 +347,40 @@ class VQProsodyEncoder(nn.Module):
 
         x = mel_spec
 
-        for i in range(self.num_layers):
-           x = self.conv1d_blocks[i](x)
-           
-        
-        x = self.pool(x) 
+        #for i in range(self.num_layers):
+        #   x = self.conv1d_blocks[i](x)
+        #   
+        #
+        #x = self.pool(x) 
 
-        for i in range(self.num_layers):
-           x = self.last_conv1d_blocks[i](x)
+        #for i in range(self.num_layers):
+        #   x = self.last_conv1d_blocks[i](x)
            
 
-        return x
         #old vq
-        # x = self.convnet(x)
+        x = self.convnet(x)
 
 
-#         quantize, loss, (perplexity, encodings, encoding_indices) = self.vq(x) #new vq
+        quantize, loss, (perplexity, encodings, encoding_indices) = self.vq(x) #new vq
 
-#         print("perp",perplexity)
+        print("perp",perplexity)
 
-#         #quantize, encoding_indices, loss = self.vq(x) #old vq
+#        quantize, encoding_indices, loss = self.vq(x) #old vq
 
-        
-# #        vq_loss = F.mse_loss(x.detach(), quantize)
-#         vq_loss = loss
+       
+        #vq_loss = F.mse_loss(x.detach(), quantize)
+        vq_loss = loss
 
-#         print("q",quantize.shape)
-#         quantize = rearrange(quantize, "B D T -> B T D").unsqueeze(2).contiguous().expand(-1, -1, 8 , -1)
-#         print("q",quantize.shape)
-#         quantize = rearrange(quantize, "B T S D -> B (T S) D")[:, :mel_len, :]
-#         print("q",quantize.shape)
-#         #quantize = quantize.permute(0,2,1)
+        print("q",quantize.shape)
+        quantize = rearrange(quantize, "B D T -> B T D").unsqueeze(2).contiguous().expand(-1, -1, 8 , -1)
+        print("q",quantize.shape)
+        quantize = rearrange(quantize, "B T S D -> B (T S) D")[:, :mel_len, :]
+        print("q",quantize.shape)
+        #quantize = quantize.permute(0,2,1)
 
-#         #prosody_features,loss,vq_loss, _
+        #prosody_features,loss,vq_loss, _
 
-#         return quantize, loss, vq_loss, encoding_indices
+        return quantize, loss, vq_loss, encoding_indices
 
 # Define hyperparameters
 # in_channels = 80  # Number of mel bins
