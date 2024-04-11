@@ -74,7 +74,9 @@ class VectorQuantiser(nn.Module):
         # quantise and unflatten
         z_q = torch.matmul(encodings, self.embedding.weight).view(z.shape)
         # compute loss for embedding
-        loss = self.beta * torch.mean((z_q.detach()-z)**2) + torch.mean((z_q - z.detach()) ** 2)
+        c_loss = self.beta * torch.mean((z_q.detach()-z)**2) 
+        vq_loss = torch.mean((z_q - z.detach()) ** 2)
+        loss = c_loss + vq_loss
   
         # preserve gradients
         z_q = z + (z_q - z).detach()
@@ -126,7 +128,7 @@ class VectorQuantiser(nn.Module):
                 contra_loss = F.cross_entropy(dis, torch.zeros((dis.size(0),), dtype=torch.long, device=dis.device))
                 loss +=  contra_loss
 
-        return z_q, loss, (perplexity, min_encodings, encoding_indices)
+        return z_q, loss, vq_loss, (perplexity, min_encodings, encoding_indices)
 
 class FeaturePool():
     """
@@ -305,7 +307,7 @@ class VQProsodyEncoder(nn.Module):
             n_blocks=2,
             middle_layer=nn.MaxPool1d(8, ceil_mode=True),
             kernel_size=kernel_size,
-            activation='GELU',
+            activation='ReLU',
         )
 
         # # self.conv1d = nn.Conv1d(in_channels, hidden_channels, kernel_size, padding=kernel_size//2)
@@ -347,27 +349,20 @@ class VQProsodyEncoder(nn.Module):
 
         x = mel_spec
 
-        res = self.conv1d_blocks[0][x]
+        #for i in range(self.num_layers):
+        #    x = self.conv1d_blocks[i](x)
+        #    
+        #x = self.pool(x) 
 
-        for j in range(0, 5):
-            for i in range(1, self.num_layers):
-                x = self.conv1d_blocks[i](x)
-                
-                
-            x = self.pool(x) 
-
-            for i in range(self.num_layers-1):
-                x = self.last_conv1d_blocks[i](x)
+        #for i in range(self.num_layers):
+        #    x = self.last_conv1d_blocks[i](x)
             
-            res = x + res
-
-        x = self.last_conv1d_blocks(self.num_layers-1)[res]
 
         #old vq
-        # x = self.convnet(x)
+        x = self.convnet(x)
 
 
-        quantize, loss, (perplexity, encodings, encoding_indices) = self.vq(x) #new vq
+        quantize, loss, vq_loss, (perplexity, encodings, encoding_indices) = self.vq(x) #new vq
 
         print("perp",perplexity)
 
@@ -375,7 +370,7 @@ class VQProsodyEncoder(nn.Module):
 
        
         #vq_loss = F.mse_loss(x.detach(), quantize)
-        vq_loss = loss
+        #vq_loss = loss
 
         print("q",quantize.shape)
         quantize = rearrange(quantize, "B D T -> B T D").unsqueeze(2).contiguous().expand(-1, -1, 8 , -1)
