@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 # from .mrte2 import LayerNormChannels
 from einops import rearrange
-from modules.convnet import ConvNetDouble
+from new_modules.convnet import ConvNetDouble
 from modules.quantization.vq import VectorQuantization
 
 class VectorQuantiser(nn.Module):
@@ -189,7 +189,7 @@ class ResidualBlock(nn.Module):
         super(ResidualBlock, self).__init__()
         self.conv1 = nn.Conv1d(in_channels, out_channels, kernel_size, padding=kernel_size//2)
         self.ln = nn.LayerNorm(out_channels)
-        self.gelu = nn.GELU()
+        self.gelu = nn.ReLU()
         self.conv2 = nn.Conv1d(out_channels, out_channels, kernel_size, padding=kernel_size//2)
         # 适配器层，以确保残差连接的维度匹配
         self.adapter = nn.Conv1d(in_channels, out_channels, 1) if in_channels != out_channels else nn.Identity()
@@ -199,17 +199,17 @@ class ResidualBlock(nn.Module):
         # 残差连接的输入
         residual = self.adapter(x)
 
+        x = self.gelu(x)
+        x = self.dropout(x)
         # 第一次Conv1D + LayerNorm + GELU
         x = self.conv1(x)
-        x = self.dropout(x)
         x = self.ln(x.permute(0, 2, 1)).permute(0, 2, 1)  # 调整维度以匹配LayerNorm的期望输入
-        x = self.gelu(x)
 
         # 第二次Conv1D + LayerNorm + GELU
-        x = self.conv2(x)
-        x = self.dropout(x)
-        x = self.ln(x.permute(0, 2, 1)).permute(0, 2, 1)
         x = self.gelu(x)
+        x = self.dropout(x)
+        x = self.conv2(x)
+        x = self.ln(x.permute(0, 2, 1)).permute(0, 2, 1)
 
         # 残差连接的输出
         return x + residual
@@ -220,7 +220,7 @@ class ResidualBlock2(nn.Module):
         super(ResidualBlock2, self).__init__()
         self.conv1 = nn.Conv1d(in_channels, in_channels, kernel_size, padding=kernel_size//2)
         self.ln = nn.LayerNorm(in_channels)
-        self.gelu = nn.GELU()
+        self.gelu = nn.ReLU()
         self.conv2 = nn.Conv1d(in_channels, out_channels, kernel_size, padding=kernel_size//2)
         self.ln2 = nn.LayerNorm(out_channels)
         # 适配器层，以确保残差连接的维度匹配
@@ -232,16 +232,16 @@ class ResidualBlock2(nn.Module):
         residual = self.adapter(x)
 
         # 第一次Conv1D + LayerNorm + GELU
-        x = self.conv1(x)
-        x = self.dropout(x)
-        x = self.ln(x.permute(0, 2, 1)).permute(0, 2, 1)  # 调整维度以匹配LayerNorm的期望输入
         x = self.gelu(x)
+        x = self.dropout(x)
+        x = self.conv1(x)
+        x = self.ln(x.permute(0, 2, 1)).permute(0, 2, 1)  # 调整维度以匹配LayerNorm的期望输入
 
         # 第二次Conv1D + LayerNorm + GELU
-        x = self.conv2(x)
-        x = self.dropout(x)
-        x = self.ln2(x.permute(0, 2, 1)).permute(0, 2, 1)
         x = self.gelu(x)
+        x = self.dropout(x)
+        x = self.conv2(x)
+        x = self.ln2(x.permute(0, 2, 1)).permute(0, 2, 1)
 
         # 残差连接的输出
         return x + residual
@@ -296,32 +296,32 @@ class VQProsodyEncoder(nn.Module):
 #             n_stacks: int = 5,
 #             n_blocks: int = 2,
         #use facebook
-        self.convnet = ConvNetDouble(
-            in_channels=in_channels,
-            out_channels=vq_dim,
-            hidden_size=hidden_channels,
-            n_layers=num_layers,
-            n_stacks=5,
-            n_blocks=2,
-            middle_layer=nn.MaxPool1d(8, ceil_mode=True),
-            kernel_size=kernel_size,
-            activation='GELU',
-        )
+        # self.convnet = ConvNetDouble(
+        #     in_channels=in_channels,
+        #     out_channels=vq_dim,
+        #     hidden_size=hidden_channels,
+        #     n_layers=num_layers,
+        #     n_stacks=5,
+        #     n_blocks=2,
+        #     middle_layer=nn.MaxPool1d(8, ceil_mode=True),
+        #     kernel_size=kernel_size,
+        #     activation='GELU',
+        # )
 
-        # self.conv1d = nn.Conv1d(in_channels, hidden_channels, kernel_size, padding=kernel_size//2)
-        # self.vq = VectorQuantizer(hidden_channels, num_embeddings, embedding_dim, commitment_cost)
-            # def __init__(self, num_embed, embed_dim, beta, distance='cos', 
-            #      anchor='probrandom', first_batch=False, contras_loss=False):
+        # # self.conv1d = nn.Conv1d(in_channels, hidden_channels, kernel_size, padding=kernel_size//2)
+        # # self.vq = VectorQuantizer(hidden_channels, num_embeddings, embedding_dim, commitment_cost)
+        #     # def __init__(self, num_embed, embed_dim, beta, distance='cos', 
+        #     #      anchor='probrandom', first_batch=False, contras_loss=False):
 
-        self.vq = VectorQuantiser(
-            num_embed=vq_bins,
-            embed_dim=vq_dim,
-            beta=vq_commitment_cost,
-            distance=vq_distance,
-            anchor=vq_anchor,
-            first_batch=vq_first_batch,
-            contras_loss=vq_contras_loss
-        )
+        # self.vq = VectorQuantiser(
+        #     num_embed=vq_bins,
+        #     embed_dim=vq_dim,
+        #     beta=vq_commitment_cost,
+        #     distance=vq_distance,
+        #     anchor=vq_anchor,
+        #     first_batch=vq_first_batch,
+        #     contras_loss=vq_contras_loss
+        # )
 
 
 # kmeans_init: bool = True,
@@ -347,44 +347,41 @@ class VQProsodyEncoder(nn.Module):
 
         x = mel_spec
 
-        #for i in range(self.num_layers):
-        #    x = self.conv1d_blocks[i](x)
-        #    x = F.dropout(x,0.1)
-        #    x = F.layer_norm(x.permute(0, 2, 1),(x.shape[1],) ).permute(0, 2, 1)  # 调整维度以匹配LayerNorm的期望输入
-        #    x = F.relu(x)
-        #
-        #x = self.pool(x) 
+        for i in range(self.num_layers):
+           x = self.conv1d_blocks[i](x)
+           
+        
+        x = self.pool(x) 
 
-        #for i in range(self.num_layers):
-        #    x = self.last_conv1d_blocks[i](x)
-        #    x = F.dropout(x,0.1)
-        #    x = F.layer_norm(x.permute(0, 2, 1),(x.shape[1],) ).permute(0, 2, 1)  # 调整维度以匹配LayerNorm的期望输入
-        #    x = F.relu(x)
+        for i in range(self.num_layers):
+           x = self.last_conv1d_blocks[i](x)
+           
 
+        return x
         #old vq
-        x = self.convnet(x)
+        # x = self.convnet(x)
 
 
-        quantize, loss, (perplexity, encodings, encoding_indices) = self.vq(x) #new vq
+#         quantize, loss, (perplexity, encodings, encoding_indices) = self.vq(x) #new vq
 
-        print("perp",perplexity)
+#         print("perp",perplexity)
 
-        #quantize, encoding_indices, loss = self.vq(x) #old vq
+#         #quantize, encoding_indices, loss = self.vq(x) #old vq
 
         
-#        vq_loss = F.mse_loss(x.detach(), quantize)
-        vq_loss = loss
+# #        vq_loss = F.mse_loss(x.detach(), quantize)
+#         vq_loss = loss
 
-        print("q",quantize.shape)
-        quantize = rearrange(quantize, "B D T -> B T D").unsqueeze(2).contiguous().expand(-1, -1, 8 , -1)
-        print("q",quantize.shape)
-        quantize = rearrange(quantize, "B T S D -> B (T S) D")[:, :mel_len, :]
-        print("q",quantize.shape)
-        #quantize = quantize.permute(0,2,1)
+#         print("q",quantize.shape)
+#         quantize = rearrange(quantize, "B D T -> B T D").unsqueeze(2).contiguous().expand(-1, -1, 8 , -1)
+#         print("q",quantize.shape)
+#         quantize = rearrange(quantize, "B T S D -> B (T S) D")[:, :mel_len, :]
+#         print("q",quantize.shape)
+#         #quantize = quantize.permute(0,2,1)
 
-        #prosody_features,loss,vq_loss, _
+#         #prosody_features,loss,vq_loss, _
 
-        return quantize, loss, vq_loss, encoding_indices
+#         return quantize, loss, vq_loss, encoding_indices
 
 # Define hyperparameters
 # in_channels = 80  # Number of mel bins
@@ -419,6 +416,21 @@ if __name__ == '__main__':
 
     #quantize, embed_ind, loss
     quantized_outputs, idn, vq_loss = vector_quantiser(inputs)
+
+# in_channels: 20  # Number of mel bins
+#           hidden_channels: 384
+#           kernel_size: 5
+#           vq_distance: l2
+#           vq_contras_loss: false
+    a = VQProsodyEncoder(20,384,5)
+    inputs = torch.randn(1, 80, 120)
+
+    import hiddenlayer as hl
+
+    # Assumes 'model' is your neural network model and 'input_tensor' is a tensor of the correct size for your network
+    graph = hl.build_graph(a, inputs)
+    graph.theme = hl.graph.THEMES["blue"].copy()
+    graph.save("vq_mine", format="png")
 
     print("---------")
     print(f"Quantized outputs shape: {quantized_outputs.shape}")
