@@ -328,14 +328,14 @@ class VQProsodyEncoder(nn.Module):
 #         kmeans_iters: int = 50,
 #         threshold_ema_dead_code: int = 2,
         
-        self.vq = VectorQuantization(
-            dim=vq_dim,
-            codebook_size=vq_bins,
-            decay=vq_decay,
-            kmeans_init=True,
-            kmeans_iters=50,
-            threshold_ema_dead_code=2,
-        ) #old vq
+        #self.vq = VectorQuantization(
+        #    dim=vq_dim,
+        #    codebook_size=vq_bins,
+        #    decay=vq_decay,
+        #    kmeans_init=True,
+        #    kmeans_iters=50,
+        #    threshold_ema_dead_code=2,
+        #) #old vq
         
 
     def forward(self, mel_spec):
@@ -347,32 +347,33 @@ class VQProsodyEncoder(nn.Module):
 
         x = mel_spec
 
-        for i in range(self.num_layers):
-            x = self.conv1d_blocks[i](x)
-            x = F.dropout(x,0.1)
-            x = F.layer_norm(x.permute(0, 2, 1),(x.shape[1],) ).permute(0, 2, 1)  # 调整维度以匹配LayerNorm的期望输入
-            x = F.relu(x)
-        
-        x = self.pool(x) 
+        #for i in range(self.num_layers):
+        #    x = self.conv1d_blocks[i](x)
+        #    x = F.dropout(x,0.1)
+        #    x = F.layer_norm(x.permute(0, 2, 1),(x.shape[1],) ).permute(0, 2, 1)  # 调整维度以匹配LayerNorm的期望输入
+        #    x = F.relu(x)
+        #
+        #x = self.pool(x) 
 
-        for i in range(self.num_layers):
-            x = self.last_conv1d_blocks[i](x)
-            x = F.dropout(x,0.1)
-            x = F.layer_norm(x.permute(0, 2, 1),(x.shape[1],) ).permute(0, 2, 1)  # 调整维度以匹配LayerNorm的期望输入
-            x = F.relu(x)
+        #for i in range(self.num_layers):
+        #    x = self.last_conv1d_blocks[i](x)
+        #    x = F.dropout(x,0.1)
+        #    x = F.layer_norm(x.permute(0, 2, 1),(x.shape[1],) ).permute(0, 2, 1)  # 调整维度以匹配LayerNorm的期望输入
+        #    x = F.relu(x)
 
         #old vq
-        # x = self.convnet(x)
+        x = self.convnet(x)
 
 
-        #quantize, loss, (perplexity, encodings, encoding_indices) = self.vq(x) #new vq
+        quantize, loss, (perplexity, encodings, encoding_indices) = self.vq(x) #new vq
 
-        #print(perplexity)
+        print("perp",perplexity)
 
-        quantize, encoding_indices, loss = self.vq(x) #old vq
+        #quantize, encoding_indices, loss = self.vq(x) #old vq
 
         
-        vq_loss = F.mse_loss(x.detach(), quantize)
+#        vq_loss = F.mse_loss(x.detach(), quantize)
+        vq_loss = loss
 
         print("q",quantize.shape)
         quantize = rearrange(quantize, "B D T -> B T D").unsqueeze(2).contiguous().expand(-1, -1, 8 , -1)
