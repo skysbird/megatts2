@@ -313,15 +313,15 @@ class VQProsodyEncoder(nn.Module):
         #     # def __init__(self, num_embed, embed_dim, beta, distance='cos', 
         #     #      anchor='probrandom', first_batch=False, contras_loss=False):
 
-        # self.vq = VectorQuantiser(
-        #     num_embed=vq_bins,
-        #     embed_dim=vq_dim,
-        #     beta=vq_commitment_cost,
-        #     distance=vq_distance,
-        #     anchor=vq_anchor,
-        #     first_batch=vq_first_batch,
-        #     contras_loss=vq_contras_loss
-        # )
+        self.vq = VectorQuantiser(
+            num_embed=vq_bins,
+            embed_dim=vq_dim,
+            beta=vq_commitment_cost,
+            distance=vq_distance,
+            anchor=vq_anchor,
+            first_batch=vq_first_batch,
+            contras_loss=vq_contras_loss
+        )
 
 
 # kmeans_init: bool = True,
