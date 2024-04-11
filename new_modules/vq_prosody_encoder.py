@@ -268,7 +268,7 @@ class VQProsodyEncoder(nn.Module):
                  vq_contras_loss=True
                 ):
         super(VQProsodyEncoder, self).__init__()
-        num_layers = 1
+        num_layers = 5
         self.input_channels = in_channels
 
         self.num_layers = num_layers
