@@ -268,7 +268,7 @@ class VQProsodyEncoder(nn.Module):
                  vq_contras_loss=True
                 ):
         super(VQProsodyEncoder, self).__init__()
-        num_layers = 8
+        num_layers = 5
         self.input_channels = in_channels
 
         self.num_layers = num_layers
@@ -347,18 +347,24 @@ class VQProsodyEncoder(nn.Module):
 
         x = mel_spec
 
-        #for i in range(self.num_layers):
-        #   x = self.conv1d_blocks[i](x)
-        #   
-        #
-        #x = self.pool(x) 
+        res = self.conv1d_blocks[0][x]
 
-        #for i in range(self.num_layers):
-        #   x = self.last_conv1d_blocks[i](x)
-           
+        for j in range(0, 5):
+            for i in range(1, self.num_layers):
+                x = self.conv1d_blocks[i](x)
+                
+                
+            x = self.pool(x) 
+
+            for i in range(self.num_layers-1):
+                x = self.last_conv1d_blocks[i](x)
+            
+            res = x + res
+
+        x = self.last_conv1d_blocks(self.num_layers-1)[res]
 
         #old vq
-        x = self.convnet(x)
+        # x = self.convnet(x)
 
 
         quantize, loss, (perplexity, encodings, encoding_indices) = self.vq(x) #new vq
