@@ -136,6 +136,8 @@ class EuclideanCodebook(nn.Module):
         self.register_buffer("cluster_size", torch.zeros(codebook_size))
         self.register_buffer("embed", embed)
         self.register_buffer("embed_avg", embed.clone())
+        self.register_buffer("cumulative_cluster_size", torch.zeros(codebook_size))  # 累积码使用频率
+
 
     @torch.jit.ignore
     def init_embed_(self, data):
@@ -157,8 +159,10 @@ class EuclideanCodebook(nn.Module):
         self.embed.data.copy_(modified_codebook)
 
     def calculate_perplexity(self):
+        self.cumulative_cluster_size += self.cluster_size
+
         # Normalize cluster sizes to get probability distribution
-        prob_distribution = self.cluster_size / self.cluster_size.sum()
+        prob_distribution = self.cumulative_cluster_size / self.cumulative_cluster_size.sum()
         # Calculate entropy
         entropy = -(prob_distribution * torch.log(prob_distribution + 1e-10)).sum()
         # Calculate perplexity
@@ -237,9 +241,10 @@ class EuclideanCodebook(nn.Module):
             embed_normalized = self.embed_avg / cluster_size.unsqueeze(1)
             self.embed.data.copy_(embed_normalized)
 
+
         perplexity = self.calculate_perplexity()
         print(f"Perplexity: {perplexity.item()}")
-        
+
         return quantize, embed_ind
 
 
