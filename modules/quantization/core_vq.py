@@ -156,6 +156,15 @@ class EuclideanCodebook(nn.Module):
         )
         self.embed.data.copy_(modified_codebook)
 
+    def calculate_perplexity(self):
+        # Normalize cluster sizes to get probability distribution
+        prob_distribution = self.cluster_size / self.cluster_size.sum()
+        # Calculate entropy
+        entropy = -(prob_distribution * torch.log(prob_distribution + 1e-10)).sum()
+        # Calculate perplexity
+        perplexity = torch.exp(entropy)
+        return perplexity
+
     def expire_codes_(self, batch_samples):
         if self.threshold_ema_dead_code == 0:
             return
@@ -228,6 +237,9 @@ class EuclideanCodebook(nn.Module):
             embed_normalized = self.embed_avg / cluster_size.unsqueeze(1)
             self.embed.data.copy_(embed_normalized)
 
+        perplexity = self.calculate_perplexity()
+        print(f"Perplexity: {perplexity.item()}")
+        
         return quantize, embed_ind
 
 
