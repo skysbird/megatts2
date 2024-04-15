@@ -60,9 +60,9 @@ class MegaGANTrainer(pl.LightningModule):
             {"params": self.G.parameters()}
         ]
 
-        D_opt = torch.optim.AdamW(
+        D_opt = torch.optim.Adam(
             D_params, lr=self.hparams.initial_learning_rate,eps=1e-9)
-        G_opt = torch.optim.AdamW(
+        G_opt = torch.optim.Adam(
             G_params, lr=self.hparams.initial_learning_rate,eps=1e-9)
 
         D_sch = transformers.get_cosine_schedule_with_warmup(
