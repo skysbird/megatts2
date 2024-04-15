@@ -4,6 +4,7 @@ import torch.nn as nn
 from einops import rearrange
 
 from typing import List
+import torch.nn.functional as F
 
 
 class ConvBlock(nn.Module):
@@ -21,13 +22,16 @@ class ConvBlock(nn.Module):
         self.dropout = nn.Dropout(0.1)
 
     def forward(self, x):
-        x = self.activation(x)
-        x = self.dropout(x)
+        
         x = self.conv(x)
 
         x = rearrange(x, "B D T -> B T D")
         x = self.norm(x)
         x = rearrange(x, "B T D -> B D T")
+
+        x = self.activation(x)
+        x = self.dropout(x)
+
         return x
 
 
@@ -201,7 +205,7 @@ class ConvNetDouble(nn.Module):
 
     def forward(self, x):
         x = self.first_layer(x)
-
+        # x = F.layer_norm(x.permute(0,2,1),(x.shape[1],)).permute(0,2,1)
         x_out = self.layers[0](x)
         for layer in self.layers[1:]:
                 x_out = x_out + layer(x)
@@ -228,7 +232,7 @@ def test():
         out_channels=128,
         hidden_size=128,
         n_layers=1,
-        n_stacks=1,
+        n_stacks=2,
         n_blocks=1,
         middle_layer=nn.MaxPool1d(
             kernel_size=8,
