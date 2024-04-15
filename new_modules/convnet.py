@@ -232,8 +232,8 @@ def test():
         out_channels=128,
         hidden_size=128,
         n_layers=1,
-        n_stacks=2,
-        n_blocks=1,
+        n_stacks=5,
+        n_blocks=2,
         middle_layer=nn.MaxPool1d(
             kernel_size=8,
             stride=8,
