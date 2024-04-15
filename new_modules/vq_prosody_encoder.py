@@ -302,9 +302,9 @@ class VQProsodyEncoder(nn.Module):
             in_channels=in_channels,
             out_channels=vq_dim,
             hidden_size=hidden_channels,
-            n_layers=num_layers,
-            n_stacks=5,
-            n_blocks=2,
+            n_layers=3,
+            n_stacks=2,
+            n_blocks=5,
             middle_layer=nn.MaxPool1d(8, ceil_mode=True),
             kernel_size=kernel_size,
             activation='ReLU',
@@ -330,14 +330,14 @@ class VQProsodyEncoder(nn.Module):
 #         kmeans_iters: int = 50,
 #         threshold_ema_dead_code: int = 2,
         
-        #self.vq = VectorQuantization(
-        #    dim=vq_dim,
-        #    codebook_size=vq_bins,
-        #    decay=vq_decay,
-        #    kmeans_init=True,
-        #    kmeans_iters=50,
-        #    threshold_ema_dead_code=2,
-        #) #old vq
+        self.vq = VectorQuantization(
+            dim=vq_dim,
+            codebook_size=vq_bins,
+            decay=vq_decay,
+            kmeans_init=True,
+            kmeans_iters=50,
+            threshold_ema_dead_code=2,
+        ) #old vq
         
 
     def forward(self, mel_spec):
@@ -362,14 +362,14 @@ class VQProsodyEncoder(nn.Module):
         x = self.convnet(x)
 
 
-        quantize, loss, vq_loss, (perplexity, encodings, encoding_indices) = self.vq(x) #new vq
+        #quantize, loss, vq_loss, (perplexity, encodings, encoding_indices) = self.vq(x) #new vq
 
-        print("perp",perplexity)
+        #print("perp",perplexity)
 
-#        quantize, encoding_indices, loss = self.vq(x) #old vq
+        quantize, encoding_indices, loss = self.vq(x) #old vq
 
        
-        #vq_loss = F.mse_loss(x.detach(), quantize)
+        vq_loss = F.mse_loss(x.detach(), quantize)
         #vq_loss = loss
 
         print("q",quantize.shape)
