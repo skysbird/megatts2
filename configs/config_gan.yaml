@@ -25,7 +25,7 @@ trainer:
   # limit_val_batches: 100
   accelerator: gpu
   log_every_n_steps: 100
-  val_check_interval: 1500
+  val_check_interval: 500
   check_val_every_n_epoch: 1
 
   # strategy: ddp
@@ -49,9 +49,8 @@ model:
         class_path: new_modules.mrte2.MRTE2
         init_args:
           mel_dim: 80
-          global_mel_dim: 80
           hidden_size: 512
-          n_heads: 2
+          num_layers: 5
       vqpe:
         #class_path: modules.vqpe.VQProsodyEncoder
         class_path: new_modules.vq_prosody_encoder.VQProsodyEncoder
@@ -62,7 +61,7 @@ model:
           vq_distance: l2
           vq_contras_loss: false
           vq_commitment_cost: 0.25
-          vq_dim: 16
+          vq_dim: 256
 
           #init_args:
           #  mel_bins: 20
@@ -103,7 +102,7 @@ model:
   class_path: models.trainer.MegaGANTrainer
 data:
   ds_path: /data/sky/data/ds/
-  max_duration_batch: 60
+  max_duration_batch: 120
   min_duration: 2.1
   max_duration: 20
   num_buckets: 10
