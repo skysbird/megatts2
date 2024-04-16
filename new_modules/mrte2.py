@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .mel_encoder import MelGenerator
+# from .mel_encoder import MelGenerator
 
 # 假设全局编码器(GE)是一个简单的全连接层
 import torch
@@ -106,7 +106,7 @@ class ResidualBlock(nn.Module):
         super(ResidualBlock, self).__init__()
         self.conv1 = nn.Conv1d(in_channels, out_channels, kernel_size, padding=kernel_size//2)
         self.ln = nn.LayerNorm(out_channels)
-        self.gelu = nn.GELU()
+        self.gelu = nn.ReLU()
         self.conv2 = nn.Conv1d(out_channels, out_channels, kernel_size, padding=kernel_size//2)
         # 适配器层，以确保残差连接的维度匹配
         self.adapter = nn.Conv1d(in_channels, out_channels, 1) if in_channels != out_channels else nn.Identity()
@@ -137,11 +137,12 @@ class ResidualBlock2(nn.Module):
         super(ResidualBlock2, self).__init__()
         self.conv1 = nn.Conv1d(in_channels, in_channels, kernel_size, padding=kernel_size//2)
         self.ln = nn.LayerNorm(in_channels)
-        self.gelu = nn.GELU()
+        self.gelu = nn.ReLU()
         self.conv2 = nn.Conv1d(in_channels, out_channels, kernel_size, padding=kernel_size//2)
         self.ln2 = nn.LayerNorm(out_channels)
         # 适配器层，以确保残差连接的维度匹配
         self.adapter = nn.Conv1d(in_channels, out_channels, 1) if in_channels != out_channels else nn.Identity()
+        self.dropout = nn.Dropout(0.1)
 
     def forward(self, x):
         # 残差连接的输入
@@ -149,13 +150,15 @@ class ResidualBlock2(nn.Module):
 
         # 第一次Conv1D + LayerNorm + GELU
         x = self.conv1(x)
-        x = self.ln(x.permute(0, 2, 1)).permute(0, 2, 1)  # 调整维度以匹配LayerNorm的期望输入
         x = self.gelu(x)
+        x = self.dropout(x)
+        x = self.ln(x.permute(0, 2, 1)).permute(0, 2, 1)  # 调整维度以匹配LayerNorm的期望输入
 
         # 第二次Conv1D + LayerNorm + GELU
         x = self.conv2(x)
-        x = self.ln2(x.permute(0, 2, 1)).permute(0, 2, 1)
         x = self.gelu(x)
+        x = self.dropout(x)
+        x = self.ln2(x.permute(0, 2, 1)).permute(0, 2, 1)
 
         # 残差连接的输出
         return x + residual
@@ -163,12 +166,12 @@ class ResidualBlock2(nn.Module):
     
 # 定义一个MRTE，这里我们假设Mel Encoder输出和Multi-Head Attention的结构和维度
 class MRTE2(nn.Module):
-    def __init__(self, mel_dim, global_mel_dim, hidden_size, n_heads):
+    def __init__(self, mel_dim, global_mel_dim, hidden_size, n_heads, num_layers=5):
         super(MRTE2, self).__init__()
         self.hidden_size = hidden_size
         self.mel_dim = mel_dim
         kernel_size = 3
-        num_layers = 5
+        # num_layers = 5
         self.conv_blocks = nn.ModuleList([
             nn.Sequential(
                 ResidualBlock(in_channels=mel_dim if i == 0 else hidden_size,
@@ -305,7 +308,7 @@ if __name__=='__main__':
     mel_dim = 80
     global_mel_dim = 80
     hidden_size = 512
-    mrte = MRTE(mel_dim=mel_dim,global_mel_dim=global_mel_dim,hidden_size=hidden_size, n_heads=2)
+    mrte = MRTE2(mel_dim=mel_dim,global_mel_dim=global_mel_dim,hidden_size=hidden_size, n_heads=2,num_layers=1)
     # Create a batch of test Mel spectrograms (batch_size, channels, time)
     test_mels = torch.randn(4, mel_dim, 120)  #  B D T Example with 4 items in a batch and 120 time-steps
     # print(test_mels.shape)
@@ -320,6 +323,12 @@ if __name__=='__main__':
     # Forward pass through the MRTE module
     phone = torch.rand(4,100,512) #B T D
     mrte_output = mrte(phone,test_mels, test_mels, duration_tokens)
+    import hiddenlayer as hl
+
+    # Assumes 'model' is your neural network model and 'input_tensor' is a tensor of the correct size for your network
+    graph = hl.build_graph(mrte, (phone, test_mels, test_mels, duration_tokens))
+    graph.theme = hl.graph.THEMES["blue"].copy()
+    graph.save("mrte2", format="png")
 
     print(f"MRTE output shape: {mrte_output.shape}")  # Expected shape: (target_length, batch_size, hidden_size)
     # print(mrte_output)
