@@ -93,6 +93,7 @@ class MRTE2(nn.Module):
         kernel_size = 3
         downsample_factor = 16
         self.hidden_size = hidden_size
+        self.mel_dim = mel_dim
 
         self.mrte_layer = self.convnet = ConvNetDouble(
             in_channels=mel_dim,
