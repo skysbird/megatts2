@@ -7,6 +7,7 @@ import torch.nn.functional as F
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from new_modules.convnet_mrte import ConvNetDouble
 
 class GlobalEncoder(nn.Module):
     def __init__(self, num_layers=5, hidden_size=512, kernel_size=31, first_channels=80):
@@ -85,117 +86,25 @@ class LengthRegulator(nn.Module):
                 output, (0, 0, 0, mel_max_length-output.size(1), 0, 0))
         return output
 
-class LayerNormChannels(nn.Module):
-    def __init__(self, normalized_shape):
-        super(LayerNormChannels, self).__init__()
-        self.layer_norm = nn.LayerNorm(normalized_shape)
-        
-    def forward(self, x):
-        # 调整x的形状，使得channels维度成为最后一个维度
-        x = x.permute(0, 2, 1)
-        # 应用LayerNorm
-        x = self.layer_norm(x)
-        # 将channels维度移回原来的位置
-        x = x.permute(0, 2, 1)
-        return x
-
-
-
-class ResidualBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size):
-        super(ResidualBlock, self).__init__()
-        self.conv1 = nn.Conv1d(in_channels, out_channels, kernel_size, padding=kernel_size//2)
-        self.ln = nn.LayerNorm(out_channels)
-        self.gelu = nn.ReLU()
-        self.conv2 = nn.Conv1d(out_channels, out_channels, kernel_size, padding=kernel_size//2)
-        # 适配器层，以确保残差连接的维度匹配
-        self.adapter = nn.Conv1d(in_channels, out_channels, 1) if in_channels != out_channels else nn.Identity()
-        self.dropout = nn.Dropout(0.1)
-
-    def forward(self, x):
-        # 残差连接的输入
-        residual = self.adapter(x)
-
-        # 第一次Conv1D + LayerNorm + GELU
-        x = self.conv1(x)
-        x = self.gelu(x)
-        x = self.dropout(x)
-        x = self.ln(x.permute(0, 2, 1)).permute(0, 2, 1)  # 调整维度以匹配LayerNorm的期望输入
-
-        # 第二次Conv1D + LayerNorm + GELU
-        x = self.conv2(x)
-        x = self.gelu(x)
-        x = self.dropout(x)
-        x = self.ln(x.permute(0, 2, 1)).permute(0, 2, 1)
-
-        # 残差连接的输出
-        return x + residual
-
-
-class ResidualBlock2(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size):
-        super(ResidualBlock2, self).__init__()
-        self.conv1 = nn.Conv1d(in_channels, in_channels, kernel_size, padding=kernel_size//2)
-        self.ln = nn.LayerNorm(in_channels)
-        self.gelu = nn.ReLU()
-        self.conv2 = nn.Conv1d(in_channels, out_channels, kernel_size, padding=kernel_size//2)
-        self.ln2 = nn.LayerNorm(out_channels)
-        # 适配器层，以确保残差连接的维度匹配
-        self.adapter = nn.Conv1d(in_channels, out_channels, 1) if in_channels != out_channels else nn.Identity()
-        self.dropout = nn.Dropout(0.1)
-
-    def forward(self, x):
-        # 残差连接的输入
-        residual = self.adapter(x)
-
-        # 第一次Conv1D + LayerNorm + GELU
-        x = self.conv1(x)
-        x = self.gelu(x)
-        x = self.dropout(x)
-        x = self.ln(x.permute(0, 2, 1)).permute(0, 2, 1)  # 调整维度以匹配LayerNorm的期望输入
-
-        # 第二次Conv1D + LayerNorm + GELU
-        x = self.conv2(x)
-        x = self.gelu(x)
-        x = self.dropout(x)
-        x = self.ln2(x.permute(0, 2, 1)).permute(0, 2, 1)
-
-        # 残差连接的输出
-        return x + residual
-    
-    
 # 定义一个MRTE，这里我们假设Mel Encoder输出和Multi-Head Attention的结构和维度
 class MRTE2(nn.Module):
-    def __init__(self, mel_dim, global_mel_dim, hidden_size, n_heads, num_layers=5):
-        super(MRTE2, self).__init__()
-        self.hidden_size = hidden_size
-        self.mel_dim = mel_dim
+    def __init__(self, mel_dim, hidden_size,  num_layers=5):
+        super(MRTE2,self).__init__()
         kernel_size = 3
-        # num_layers = 5
-        self.conv_blocks = nn.ModuleList([
-            nn.Sequential(
-                ResidualBlock(in_channels=mel_dim if i == 0 else hidden_size,
-                          out_channels=hidden_size,
-                          kernel_size=kernel_size)
-            ) for i in range(num_layers)
-        ])
-
-
-        self.last_conv_blocks = nn.ModuleList([
-            nn.Sequential(
-                ResidualBlock2(hidden_size,
-                          out_channels= hidden_size,
-                          kernel_size=kernel_size)
-            ) for i in range(num_layers)
-        ])
-
         downsample_factor = 16
-        # 定义16倍下采样层
-        self.downsample = nn.Conv1d(hidden_size, hidden_size, kernel_size=1, stride=downsample_factor)
 
-        # self.mel_conv = nn.Conv1d(in_channels=mel_dim, out_channels=hidden_size, kernel_size=3, padding=1)
-        # self.mel_encoder = MelGenerator() 
-        # self.global_encoder = GlobalEncoder(first_channels=global_mel_dim)
+        self.mrte_layer = self.convnet = ConvNetDouble(
+            in_channels=mel_dim,
+            out_channels=hidden_size,
+            hidden_size=hidden_size,
+            n_layers=num_layers,
+            n_stacks=2,
+            n_blocks=5,
+            middle_layer=nn.Conv1d(hidden_size, hidden_size, kernel_size=1, stride=downsample_factor),
+            kernel_size=kernel_size,
+            activation='ReLU',
+        )
+
         self.length_regulator = LengthRegulator()
 
     def forward(self, 
@@ -206,77 +115,63 @@ class MRTE2(nn.Module):
                 ):
 
         mel_encoded = global_mel_spec
-        #卷
-        for conv_block in self.conv_blocks:
-            mel_encoded = conv_block(mel_encoded)
-
-        # print(mel_encoded.shape)
-        #下采样
-        mel_encoded = self.downsample(mel_encoded)
-
-        # print(mel_encoded.shape)
-
-        #卷
-        for conv_block in self.last_conv_blocks:
-            mel_encoded = conv_block(mel_encoded)
-
-
+        mel_encoded = self.mrte_layer(mel_encoded)
         mel_encoded = mel_encoded.permute(2,0,1) #zt
         # Multi-Head Attention
 
         return mel_encoded #zt
 
     
-    def tc_latent(self, phone, mel_spec, global_mel_spec, target_length):
+    # def tc_latent(self, phone, mel_spec, global_mel_spec, target_length):
 
-        # 先卷到目标维
-        mel_spec_conv = self.mel_conv(mel_spec)
-        # print(mel_spec.shape)
-        # Mel Encoder
-        mel_encoded = self.mel_encoder(mel_spec_conv)  # [B, T, mel_dim]
-        # print(mel_encoded.shape)
+    #     # 先卷到目标维
+    #     mel_spec_conv = self.mel_conv(mel_spec)
+    #     # print(mel_spec.shape)
+    #     # Mel Encoder
+    #     mel_encoded = self.mel_encoder(mel_spec_conv)  # [B, T, mel_dim]
+    #     # print(mel_encoded.shape)
 
-        mel_encoded = mel_encoded.permute(2,0,1)
-        # Multi-Head Attention
-        # print("p")
-        # print(phone.shape)
-        # print(mel_encoded.shape)
-        phone_p = phone.permute(1,0,2)
-        attn_output, _ = self.multihead_attention(phone_p, mel_encoded, mel_encoded)  # [B, T, mel_dim]
+    #     mel_encoded = mel_encoded.permute(2,0,1)
+    #     # Multi-Head Attention
+    #     # print("p")
+    #     # print(phone.shape)
+    #     # print(mel_encoded.shape)
+    #     phone_p = phone.permute(1,0,2)
+    #     attn_output, _ = self.multihead_attention(phone_p, mel_encoded, mel_encoded)  # [B, T, mel_dim]
 
-        # Global Encoder
-        global_features = self.global_encoder(global_mel_spec)  # [B, global_dim]
-        # global_features = global_features.unsqueeze(1).expand(-1, attn_output.size(1), -1)  # [B, T, global_dim]
-        # global_features = self.global_encoder(attn_output.mean(dim=0))
+    #     # Global Encoder
+    #     global_features = self.global_encoder(global_mel_spec)  # [B, global_dim]
+    #     # global_features = global_features.unsqueeze(1).expand(-1, attn_output.size(1), -1)  # [B, T, global_dim]
+    #     # global_features = self.global_encoder(attn_output.mean(dim=0))
 
-        # Length Regulator
-        global_features = global_features.permute(2,0,1)
-        attn_output = attn_output.permute(0,1,2)
+    #     # Length Regulator
+    #     global_features = global_features.permute(2,0,1)
+    #     attn_output = attn_output.permute(0,1,2)
         
-        # print(attn_output.shape)
-        # print(global_features.shape)
-        # 合并Attention输出和全局特征
-        #combined_output = torch.cat((attn_output, global_features), dim=0)  # [B, T*target_length, mel_dim+global_dim]
+    #     # print(attn_output.shape)
+    #     # print(global_features.shape)
+    #     # 合并Attention输出和全局特征
+    #     #combined_output = torch.cat((attn_output, global_features), dim=0)  # [B, T*target_length, mel_dim+global_dim]
 
-        #这个合并改成元素级别加法看看
-        #print(attn_output.shape)
-        #print(global_features.shape)
-        #print(phone_p.shape)
+    #     #这个合并改成元素级别加法看看
+    #     #print(attn_output.shape)
+    #     #print(global_features.shape)
+    #     #print(phone_p.shape)
 
-        t = phone_p.shape[0]
-        global_features_pooled = F.adaptive_avg_pool1d(global_features.cpu().transpose(0, 2), t).transpose(0, 2).to(phone_p[0].device)
+    #     t = phone_p.shape[0]
+    #     global_features_pooled = F.adaptive_avg_pool1d(global_features.cpu().transpose(0, 2), t).transpose(0, 2).to(phone_p[0].device)
 
-        #combined_output = attn_output + global_features_pooled  # [B, T*target_length, mel_dim+global_dim]
-        combined_output = phone_p + attn_output + global_features_pooled  # [B, T*target_length, mel_dim+global_dim]
+    #     #combined_output = attn_output + global_features_pooled  # [B, T*target_length, mel_dim+global_dim]
+    #     combined_output = phone_p + attn_output + global_features_pooled  # [B, T*target_length, mel_dim+global_dim]
 
 
-        # print(combined_output.shape)
+    #     # print(combined_output.shape)
 
-        combined_output = combined_output.permute(1,0,2)
-        # print(combined_output.shape)
-        # print(f"MRTE combined_output shape: {combined_output.shape}")  
+    #     combined_output = combined_output.permute(1,0,2)
+    #     # print(combined_output.shape)
+    #     # print(f"MRTE combined_output shape: {combined_output.shape}")  
 
-        return combined_output
+    #     return combined_output
 
 
 
@@ -308,7 +203,7 @@ if __name__=='__main__':
     mel_dim = 80
     global_mel_dim = 80
     hidden_size = 512
-    mrte = MRTE2(mel_dim=mel_dim,global_mel_dim=global_mel_dim,hidden_size=hidden_size, n_heads=2,num_layers=1)
+    mrte = MRTE2(mel_dim=mel_dim,hidden_size=hidden_size, num_layers=5)
     # Create a batch of test Mel spectrograms (batch_size, channels, time)
     test_mels = torch.randn(4, mel_dim, 120)  #  B D T Example with 4 items in a batch and 120 time-steps
     # print(test_mels.shape)
