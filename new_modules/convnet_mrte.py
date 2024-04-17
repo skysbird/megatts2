@@ -30,7 +30,7 @@ class ConvBlock(nn.Module):
         x = rearrange(x, "B T D -> B D T")
 
         x = self.activation(x)
-        x = self.dropout(x)
+        # x = self.dropout(x)
 
         return x
 
