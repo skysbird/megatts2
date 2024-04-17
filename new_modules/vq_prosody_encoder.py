@@ -302,7 +302,7 @@ class VQProsodyEncoder(nn.Module):
             in_channels=in_channels,
             out_channels=vq_dim,
             hidden_size=hidden_channels,
-            n_layers=3,
+            n_layers=5,
             n_stacks=2,
             n_blocks=5,
             middle_layer=nn.MaxPool1d(8, ceil_mode=True),
