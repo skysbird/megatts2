@@ -159,9 +159,8 @@ class VQGANTTS(nn.Module):
 
         _, _, _, codes = self.vqpe(ref_audio)
 
-        content_features = content_features.permute(1,0,2)
 
-        return content_features, codes
+        return attn_output, codes
     
     
     def discriminate(self, mel):

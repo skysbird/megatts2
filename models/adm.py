@@ -58,10 +58,7 @@ class ADM(nn.Module):
             tc_latents: torch.Tensor,  # (B, T, D)
             duration_tokens: torch.Tensor,  # (B, T)
             lens: torch.Tensor,  # (B,)
-    ):
-
-       
-        #要看一下这个tc_latents到底包不包含mrte的所有输入？mrte里面是存在一个GE的，会拉长整体的序列T维度的长度
+    ):       
         duration_embeddings = self.duration_embedding(duration_tokens[:, :-1])
         tc_embeddings = self.tc_emb(tc_latents)
 
@@ -71,23 +68,6 @@ class ADM(nn.Module):
         #print(x_emb.shape)
         x_pos = self.pos_encoder(x_emb)
 
-        # 生成掩码
-        # batch_size, seq_len = duration_tokens.size(0), duration_tokens.size(1)
-        # tgt_mask = self.generate_square_subsequent_mask(seq_len).to(duration_tokens.device)
-
-        # 只有序列中非padding部分参与计算，所以需要一个key_padding_mask
-        # key_padding_mask = torch.arange(seq_len).expand(batch_size, seq_len) >= lens.unsqueeze(1)
-        
-        # print(tgt_mask.shape)
-        # print(key_padding_mask.shape)
-        # print(key_padding_mask)
-
-        # dummy_memory = torch.zeros((seq_len, batch_size, self.dd_model), device=tc_latents.device)
-
-        # output = self.transformer_decoder(tgt=x_pos, memory=dummy_memory, tgt_mask=tgt_mask, tgt_key_padding_mask=key_padding_mask)
-
-        # print(x_pos.shape)
-        # print(lens.shape)
         x = self.transformer_decoder(x_pos, lens, causal=True)
 
 
