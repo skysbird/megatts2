@@ -79,10 +79,7 @@ class VQGANTTS(nn.Module):
 
         # Content Encoder forward pass
         # self.content_encoder.forward(src_seq, src_seq)
-        print("t",text.shape)
         content_features = self.content_encoder(text)
-        print("c",content_features.shape)
-        print("d",duration_tokens.shape)
 
         ref_audio = ref_audio.permute(0,2,1)
         ref_audios = ref_audios.permute(0,2,1)
@@ -90,13 +87,7 @@ class VQGANTTS(nn.Module):
         # Forward pass through the MRTE module
         mrte_features = self.mrte(content_features, ref_audio, ref_audios, duration_tokens)
 
-
         content_features = content_features.permute(1,0,2)
-        #mrte_features = mrte_features.permute(2,0,1)
-
-        #print("c",content_features.shape)
-        #print("m",mrte_features.shape)
-
         # attension
         attn_output, _ = self.multihead_attention(content_features, mrte_features, mrte_features)  # [B, T, mel_dim]
 
@@ -107,13 +98,9 @@ class VQGANTTS(nn.Module):
 
         combined_output = combined_output.permute(1,0,2)
 
-
-        print("m",mrte_features.shape)
         #上采样
         mrte_features = self.length_regulator(combined_output, duration_tokens)  # [ T*target_length, B,mel_dim]
 
-        print("m",mrte_features.shape)
-        # ref_audio = ref_audio.permute(0,2,1)
         #old vq
         # ref_audio = ref_audio.permute(0,2,1) #old vq
         print("r",ref_audio.shape)
@@ -123,21 +110,9 @@ class VQGANTTS(nn.Module):
         #old zq, commit_loss, vq_loss, codes
         # prosody_features,loss, _,  = self.vqpe(ref_audio)
 
-
-        print("p",prosody_features.shape)
-        # 使用repeat函数沿特征维度重复vq_output
-        #vq_output_repeated = prosody_features.repeat(1, self.repeat_times, 1)
-        #print("v",vq_output_repeated.shape)
-
-        # 使用一个1x1卷积来降维到512
-        
-        #prosody_features = self.up_conv1d(vq_output_repeated)
         # prosody_features =prosody_features.permute(0,2,1) #new vq
-        print("p",prosody_features.shape)
         content_features = content_features.permute(1,0,2)
-        print("c",content_features.shape)
-        content_features = self.length_regulator(content_features, duration_tokens)  # [ T*target_length, B,mel_dim]
-        print("c",content_features.shape)
+        content_features = self.length_regulator(content_features, duration_tokens)  
 
         x = torch.cat([mrte_features, content_features, prosody_features],dim=-1)
 
