@@ -148,6 +148,47 @@ class VQGANTTS(nn.Module):
         return mel_output,loss,vq_loss
 
 
+
+    def s2_latent(self,  text, ref_audio, ref_audios, duration_tokens):
+        #
+        #  batch['phone_tokens'].cuda(),
+        #             batch['mel_targets'].cuda(),
+        #             batch['mel_timbres'].cuda(),
+        #             batch['duration_tokens'].cuda(),
+
+        content_features = self.content_encoder(text)
+
+
+        ref_audio = ref_audio.permute(0,2,1)
+        ref_audios = ref_audios.permute(0,2,1)
+
+        # Forward pass through the MRTE module
+        mrte_features = self.mrte(content_features, ref_audio, ref_audios, duration_tokens)
+
+
+        content_features = content_features.permute(1,0,2)
+
+        # attension
+        attn_output, _ = self.multihead_attention(content_features, mrte_features, mrte_features)  # [B, T, mel_dim]
+
+        # concat
+        attn_output = attn_output.permute(0,1,2)
+
+        combined_output = content_features + attn_output   # [B, T*target_length, mel_dim+global_dim]
+
+        combined_output = combined_output.permute(1,0,2)
+
+
+        #上采样
+        mrte_features = self.length_regulator(combined_output, duration_tokens)  # [ T*target_length, B,mel_dim]
+
+        _, _, _, codes = self.vqpe(ref_audio)
+
+        content_features = content_features.permute(1,0,2)
+
+        return content_features, codes
+    
+    
     def discriminate(self, mel):
         # GAN Discriminator forward pass
         return self.gan_discriminator(mel)

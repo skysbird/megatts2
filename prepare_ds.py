@@ -39,7 +39,7 @@ from modules.tokenizer import (
     AudioFeatExtraConfig
 )
 # from models.megatts2 import MegaG
-from models.gan import VQGANTTS
+from models.gan2 import VQGANTTS
 
 from modules.datamodule import TTSDataset, make_spk_cutset
 
