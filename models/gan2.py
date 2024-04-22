@@ -209,14 +209,10 @@ class VQGANTTS(nn.Module):
 
             content_encoder = instantiate_class(
                 args=(), init=G_config['init_args']['content_encoder'])
-            mel_decoder = instantiate_class(
-                args=(), init=G_config['init_args']['mel_decoder'])
-
 
             G_config['init_args']['mrte'] = mrte
             G_config['init_args']['vqpe'] = vqpe
             G_config['init_args']['content_encoder'] = content_encoder
-            G_config['init_args']['mel_decoder'] = mel_decoder
 
             G = instantiate_class(args=(), init=G_config)
 
