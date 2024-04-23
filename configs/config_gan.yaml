@@ -55,7 +55,7 @@ model:
         #class_path: modules.vqpe.VQProsodyEncoder
         class_path: new_modules.vq_prosody_encoder.VQProsodyEncoder
         init_args:
-          in_channels:  20 # Number of mel bins
+          in_channels:  80 # Number of mel bins
           hidden_channels: 384
           kernel_size: 5
           vq_distance: l2

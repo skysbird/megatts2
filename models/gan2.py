@@ -85,7 +85,7 @@ class VQGANTTS(nn.Module):
         ref_audios = ref_audios.permute(0,2,1)
 
         # Forward pass through the MRTE module
-        mrte_features = self.mrte(content_features, ref_audio, ref_audios, duration_tokens)
+        mrte_features = self.mrte(ref_audios)
 
         content_features = content_features.permute(1,0,2)
         # attension
@@ -97,6 +97,8 @@ class VQGANTTS(nn.Module):
         # combined_output = content_features + attn_output   # [B, T*target_length, mel_dim+global_dim]
 
         # combined_output = combined_output.permute(1,0,2)
+
+        attn_output = attn_output.permute(1,0,2)
 
         #上采样
         mrte_features = self.length_regulator(attn_output, duration_tokens)  # [ T*target_length, B,mel_dim]
