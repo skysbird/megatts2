@@ -135,31 +135,27 @@ class VQGANTTS(nn.Module):
 
         content_features = self.content_encoder(text)
 
-
         ref_audio = ref_audio.permute(0,2,1)
         ref_audios = ref_audios.permute(0,2,1)
 
         # Forward pass through the MRTE module
-        mrte_features = self.mrte(content_features, ref_audio, ref_audios, duration_tokens)
-
+        mrte_features = self.mrte(ref_audios)
 
         content_features = content_features.permute(1,0,2)
-
         # attension
         attn_output, _ = self.multihead_attention(content_features, mrte_features, mrte_features)  # [B, T, mel_dim]
-
-        # concat
-        attn_output = attn_output.permute(0,1,2)
-
-        combined_output = content_features + attn_output   # [B, T*target_length, mel_dim+global_dim]
-
-        combined_output = combined_output.permute(1,0,2)
-
+        attn_output = attn_output.permute(1,0,2)
 
         #上采样
-        mrte_features = self.length_regulator(combined_output, duration_tokens)  # [ T*target_length, B,mel_dim]
+        mrte_features = self.length_regulator(attn_output, duration_tokens)  # [ T*target_length, B,mel_dim]
 
-        _, _, _, codes = self.vqpe(ref_audio)
+        #old vq
+        # ref_audio = ref_audio.permute(0,2,1) #old vq
+        print("r",ref_audio.shape)
+        #return zq, commit_loss, vq_loss, codes
+
+        _,_,_, codes  = self.vqpe(ref_audio)
+        
 
 
         return attn_output, codes
