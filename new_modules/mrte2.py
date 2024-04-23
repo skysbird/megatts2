@@ -110,10 +110,7 @@ class MRTE2(nn.Module):
         self.length_regulator = LengthRegulator()
 
     def forward(self, 
-                phone, #(B,T,D)
-                mel_spec, #target mel (B,T,D)
                 global_mel_spec, # same spk group mel without target mel (B,T,D)
-                target_length #target duration (B,T)
                 ):
 
         mel_encoded = global_mel_spec

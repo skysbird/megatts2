@@ -92,14 +92,14 @@ class VQGANTTS(nn.Module):
         attn_output, _ = self.multihead_attention(content_features, mrte_features, mrte_features)  # [B, T, mel_dim]
 
         # concat
-        attn_output = attn_output.permute(0,1,2)
+        # attn_output = attn_output.permute(0,1,2)
 
-        combined_output = content_features + attn_output   # [B, T*target_length, mel_dim+global_dim]
+        # combined_output = content_features + attn_output   # [B, T*target_length, mel_dim+global_dim]
 
-        combined_output = combined_output.permute(1,0,2)
+        # combined_output = combined_output.permute(1,0,2)
 
         #上采样
-        mrte_features = self.length_regulator(combined_output, duration_tokens)  # [ T*target_length, B,mel_dim]
+        mrte_features = self.length_regulator(attn_output, duration_tokens)  # [ T*target_length, B,mel_dim]
 
         #old vq
         # ref_audio = ref_audio.permute(0,2,1) #old vq
