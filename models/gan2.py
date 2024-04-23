@@ -156,7 +156,7 @@ class VQGANTTS(nn.Module):
 
         _,_,_, codes  = self.vqpe(ref_audio)
         
-        attn_output = attn_output.permute(1,0,2)
+        # attn_output = attn_output.permute(1,0,2)
 
         return attn_output, codes
     
