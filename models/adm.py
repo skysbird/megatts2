@@ -28,7 +28,7 @@ class ADM(nn.Module):
         self.duration_embedding = nn.Linear(1, dt_emb_dim, bias=False)
         self.tc_emb = nn.Linear(tc_latent_dim, tc_emb_dim, bias=False)
 
-        self.pos_encoder = SinePositionalEmbedding(d_model)
+        self.pos_encoder = SinePositionalEmbedding(d_model,dropout=dropout)
         # self.decoder_layers = TransformerDecoderLayer(self.dd_model, nhead, dim_feedforward, batch_first=True)
         # self.transformer_decoder = TransformerDecoder(self.decoder_layers, num_layers)
         self.transformer_decoder = TransformerEncoder(
@@ -41,8 +41,11 @@ class ADM(nn.Module):
             ),
             num_layers=num_layers,
         )
+        
+        self.norm = nn.LayerNorm(d_model)
 
         self.output_layer = nn.Linear(d_model, 1, bias=False)  # Output layer for duration prediction
+
 
     # def forward(self, src, memory):
     #     src = self.pos_encoder(src)
@@ -70,6 +73,7 @@ class ADM(nn.Module):
 
         x = self.transformer_decoder(x_pos, lens, causal=True)
 
+        x = self.norm(x)
 
         duration_tokens_predict = self.output_layer(x)[..., 0]
 
