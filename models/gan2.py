@@ -147,7 +147,7 @@ class VQGANTTS(nn.Module):
         attn_output = attn_output.permute(1,0,2)
 
         #上采样
-        mrte_features = self.length_regulator(attn_output, duration_tokens)  # [ T*target_length, B,mel_dim]
+        # mrte_features = self.length_regulator(attn_output, duration_tokens)  # [ T*target_length, B,mel_dim]
 
         #old vq
         # ref_audio = ref_audio.permute(0,2,1) #old vq
