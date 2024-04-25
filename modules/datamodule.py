@@ -256,10 +256,28 @@ class MegaADMDataset(torch.utils.data.Dataset):
         duration_token_list = []
         tc_latent_list = []
         lens = []
+        phone_tokens_list = []
+
+
+        # mel_targets, mel_target_lens = collate_features(
+        #     cuts_sample,
+        #     executor=_get_executor(8, executor_type=ThreadPoolExecutor),)
+
+        # # align duration token and mel_target_lens
+        # for i in range(mel_target_lens.shape[0]):
+        #     sum_duration = torch.sum(duration_tokens[i])
+        #     assert sum_duration <= mel_target_lens[i]
+        #     if sum_duration < mel_target_lens[i]:
+        #         mel_target_lens[i] = sum_duration
+
+        # max_len = max(mel_target_lens)
+        # mel_targets = mel_targets[:, :max_len, :]
+        
         for cut in cuts_sample:
             spk = cut.supervisions[0].speaker
             id = cut.recording_id
-
+            
+            phone_tokens = cut.supervisions[0].custom['phone_tokens']
             duration_tokens = cut.supervisions[0].custom['duration_tokens']
             if np.max(duration_tokens) >= self.max_duration_token:
                 continue
@@ -282,6 +300,8 @@ class MegaADMDataset(torch.utils.data.Dataset):
             assert tc_latent.shape[0] == duration_tokens.shape[0]
             #print("xxxx")
 
+            phone_tokens_list.append(self.tokens_collector.phone2token(phone_tokens))
+
             duration_token_list.append(duration_tokens)
             tc_latent_list.append(tc_latent)
             lens.append(duration_tokens.shape[0])
@@ -291,21 +311,31 @@ class MegaADMDataset(torch.utils.data.Dataset):
         # pad
         duration_token_list_padded = []
         tc_latent_list_padded = []
+        phone_tokens_list_padded = []
+
         for i in range(len(duration_token_list)):
             duration_token_list_padded.append(F.pad(
                 duration_token_list[i], (1, max_len - lens[i]), mode='constant', value=0))
             tc_latent_list_padded.append(F.pad(
                 tc_latent_list[i], (0, 0, 0, max_len - lens[i]), mode='constant', value=0))
-
+            phone_tokens_list_padded.append(F.pad(
+                phone_tokens_list[i], (0, max_len - lens[i]), mode='constant', value=0))
+        
+        phone_tokens = torch.stack(phone_tokens_list_padded)
         duration_tokens = torch.stack(duration_token_list_padded).type(
             torch.float32).unsqueeze(-1)
         tc_latents = torch.stack(tc_latent_list_padded).type(torch.float32)
         lens = torch.Tensor(lens).to(dtype=torch.int32)
 
+        print(duration_tokens.shape)
+        print(tc_latents.shape)
+        print(lens.shape)
+        print(phone_tokens.shape)
         batch = {
             "duration_tokens": duration_tokens,
             "tc_latents": tc_latents,
             "lens": lens,
+            "phone_tokens": phone_tokens
         }
 
         return batch

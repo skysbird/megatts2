@@ -160,7 +160,28 @@ class VQGANTTS(nn.Module):
 
         return attn_output, codes
     
-    
+    def infer(
+        self,
+        tc_latents: torch.Tensor,  # (B, T, D)
+        phone_tokens: torch.Tensor,
+        duration_tokens: torch.Tensor,  # (B, T)
+        ref_audio: torch.Tensor
+    ):
+        mrte_features = self.length_regulator(tc_latents, duration_tokens)  # [ T*target_length, B,mel_dim]
+        content_features = self.content_encoder(phone_tokens)
+
+        prosody_features,loss,vq_loss, _  = self.vqpe(ref_audio)
+       
+        content_features = content_features.permute(1,0,2)
+        content_features = self.length_regulator(content_features, duration_tokens)  
+
+        x = torch.cat([mrte_features, content_features, prosody_features],dim=-1)
+
+        x = x.permute(0,2,1) #B D T
+        mel_output = self.mel_decoder(x)
+        mel_output = mel_output.permute(0,2,1)
+
+
     def discriminate(self, mel):
         # GAN Discriminator forward pass
         return self.gan_discriminator(mel)
