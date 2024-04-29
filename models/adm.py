@@ -40,11 +40,12 @@ class ADM(nn.Module):
                 conv_ff=False,
             ),
             num_layers=num_layers,
-            norm = nn.ReLU()
+            norm = nn.LayerNorm(d_model)
         )
         
-        self.norm = nn.LayerNorm(d_model)
         self.relu = nn.ReLU()
+        self.dropout = nn.Dropout(0.1)
+
         self.output_layer = nn.Linear(d_model, 1, bias=False)  # Output layer for duration prediction
 
 
@@ -74,10 +75,10 @@ class ADM(nn.Module):
 
         x = self.transformer_decoder(x_pos, lens, causal=True)
 
-        x = self.norm(x)
 
         duration_tokens_predict = self.output_layer(x)[..., 0]
 
+        duration_tokens_predict = self.dropout(duration_tokens_predict)
         duration_tokens_predict = self.relu(duration_tokens_predict)
 
         target = duration_tokens[:, 1:, 0]
