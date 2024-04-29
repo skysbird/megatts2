@@ -40,6 +40,7 @@ class ADM(nn.Module):
                 conv_ff=False,
             ),
             num_layers=num_layers,
+            norm = nn.ReLU()
         )
         
         self.norm = nn.LayerNorm(d_model)
@@ -78,7 +79,7 @@ class ADM(nn.Module):
         duration_tokens_predict = self.output_layer(x)[..., 0]
 
         duration_tokens_predict = self.relu(duration_tokens_predict)
-                
+
         target = duration_tokens[:, 1:, 0]
 
         return duration_tokens_predict, target 
