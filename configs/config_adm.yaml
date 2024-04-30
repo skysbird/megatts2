@@ -12,7 +12,7 @@ trainer:
     - class_path: lightning.pytorch.callbacks.ModelCheckpoint
       init_args:
         monitor: val/loss
-        filename: adm_checkpoint_{epoch}_{step}_{val/loss:.4f}
+        filename: adm_checkpoint_{epoch}_{step}
         save_top_k: 5
         save_last: true
         every_n_epochs: 1

@@ -124,6 +124,22 @@ class VQGANTTS(nn.Module):
         
         return mel_output,loss,vq_loss
 
+    def s2_latent_o(self,  text, ref_audio, ref_audios):
+
+        content_features = self.content_encoder(text)
+
+        ref_audio = ref_audio.permute(0,2,1)
+        ref_audios = ref_audios.permute(0,2,1)
+
+        # Forward pass through the MRTE module
+        mrte_features = self.mrte(ref_audios)
+
+        content_features = content_features.permute(1,0,2)
+        # attension
+        attn_output, _ = self.multihead_attention(content_features, mrte_features, mrte_features)  # [B, T, mel_dim]
+        attn_output = attn_output.permute(1,0,2)
+
+        return attn_output
 
 
     def s2_latent(self,  text, ref_audio, ref_audios, duration_tokens):

@@ -107,7 +107,7 @@ class MRTE(nn.Module):
         mel_spec_conv = self.mel_conv(mel_spec)
         # print(mel_spec.shape)
         # Mel Encoder
-        0 2 1
+        #0 2 1
         mel_encoded = self.mel_encoder(mel_spec_conv)  # [B, T, mel_dim]
         # print(mel_encoded.shape)
         mel_encoded = mel_encoded.permute(2,0,1)
