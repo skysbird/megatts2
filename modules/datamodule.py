@@ -199,7 +199,7 @@ class MegaPLMDataset(torch.utils.data.Dataset):
             tc_latent, p_code = self.read_latent(cut)
 
             tc_latent_spk = tc_latent[0, ...]
-            p_code_spk = torch.cat([p_code[0, 0, :]])
+            p_code_spk = torch.cat([p_code[0, :]])
 
             assert tc_latent_spk.shape[0] == p_code_spk.shape[0]
 
@@ -209,7 +209,7 @@ class MegaPLMDataset(torch.utils.data.Dataset):
                 tc_latent_spk = torch.cat(
                     [tc_latent_spk_cat[0, ...], tc_latent_spk], dim=0)
                 p_code_spk = torch.cat(
-                    [p_code_spk_cat[0, 0, :], p_code_spk], dim=0)
+                    [p_code_spk_cat[0, :], p_code_spk], dim=0)
 
                 assert tc_latent_spk.shape[0] == p_code_spk.shape[0]
                 assert torch.max(p_code_spk) < 1024
