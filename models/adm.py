@@ -101,8 +101,6 @@ class ADM(nn.Module):
 
             x = self.transformer_decoder(x_pos)
 
-            x = self.norm(x)
-
             dt_predict = self.output_layer(x)[:, -1:, :]
         
             dt_predict = self.relu(dt_predict)
