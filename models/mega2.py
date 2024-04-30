@@ -4,9 +4,11 @@ from torch.nn import TransformerDecoder, TransformerDecoderLayer
 from modules.transformer import TransformerEncoder, TransformerEncoderLayer
 
 from new_modules.embedding import SinePositionalEmbedding
-from models.gan import VQGANTTS
+from models.gan2 import VQGANTTS
 from models.adm import ADM
 from models.plm import PLMModel
+from models.megatts2 import MegaADM,MegaPLM
+
 from modules.mrte import LengthRegulator
 import librosa
 from modules.tokenizer import (
@@ -65,10 +67,16 @@ class Mega2(nn.Module):
 
         self.generator = VQGANTTS.from_pretrained(g_ckpt, g_config)
         self.generator.eval()
-        self.plm = PLMModel.from_pretrained(plm_ckpt, plm_config)
+        #self.plm = PLMModel.from_pretrained(plm_ckpt, plm_config)
+        #self.plm.eval()
+        #self.adm = ADM.from_pretrained(adm_ckpt, adm_config)
+        #self.adm.eval()
+
+        self.plm = MegaPLM.from_pretrained(plm_ckpt, plm_config)
         self.plm.eval()
-        self.adm = ADM.from_pretrained(adm_ckpt, adm_config)
+        self.adm = MegaADM.from_pretrained(adm_ckpt, adm_config)
         self.adm.eval()
+
 
         self.ttc = TokensCollector(symbol_table)
 
@@ -104,19 +112,21 @@ class Mega2(nn.Module):
         # Make mrte mels
         wavs = glob.glob(f'{wavs_dir}/*.wav')
         mels = torch.empty(0)
-        for wav in wavs:
-            y = librosa.load(wav, sr=HIFIGAN_SR)[0]
-            y = librosa.util.normalize(y)
-            # y = librosa.effects.trim(y, top_db=20)[0]
-            y = torch.from_numpy(y)
+        #for wav in wavs:
+        #    y = librosa.load(wav, sr=HIFIGAN_SR)[0]
+        #    y = librosa.util.normalize(y)
+        #    # y = librosa.effects.trim(y, top_db=20)[0]
+        #    y = torch.from_numpy(y)
 
-            mel_spec = extract_mel_spec(y).transpose(0, 1)
-            mels = torch.cat([mels, mel_spec], dim=0)
+        #    mel_spec = extract_mel_spec(y).transpose(0, 1)
+        #    mels = torch.cat([mels, mel_spec], dim=0)
 
-            if mels_prompt is None:
-                mels_prompt = mel_spec
-                print("p_"+wav)
-            print(wav)
+        #    if mels_prompt is None:
+        #        mels_prompt = mel_spec
+        #        print("p_"+wav)
+        #    print(wav)
+
+        mels = torch.cat([mels, mel_spec], dim=0)
 
         mels = mels.unsqueeze(0)
 
@@ -133,12 +143,18 @@ class Mega2(nn.Module):
         print(phone_tokens.shape)
         with torch.no_grad():
             # mels = mels.permute(0,2,1)
-            # mels_prompt = mels_prompt.unsqueeze(0).permute(0,2,1)
-            phone_tokens_e = self.generator.content_encoder(phone_tokens)
+            mels_prompt = mels_prompt.unsqueeze(0)
             print(phone_tokens.shape)
-            tc_latent = self.generator.mrte.tc_latent(phone_tokens_e, mels_prompt, mels, None)
+            print(mels_prompt.shape)
+            tc_latent = self.generator.s2_latent_o(phone_tokens, mels_prompt, mels)
             print("t1",tc_latent)
+
+
+
             dt = self.adm.infer(tc_latent)[..., 0]
+
+            content_features = self.generator.content_encoder(phone_tokens)
+            content_features = self.lr(content_features, dt)
 
             # x, _ = self.generator(dt, phone_tokens,mels,mels )
 
@@ -153,13 +169,13 @@ class Mega2(nn.Module):
 
             p_codes = self.plm.infer(tc_latent)
 
-            print("pppp",p_codes)
-            zq = self.generator.vq_prosody_encoder.vq.decode(p_codes.unsqueeze(0))
+            print("pppp",p_codes.shape)
+            zq = self.generator.vqpe.vq.decode(p_codes)
             zq = rearrange(
                 zq, "B D T -> B T D").unsqueeze(2).contiguous().expand(-1, -1, 8, -1)
             zq = rearrange(zq, "B T S D -> B (T S) D")
             x = torch.cat(
-                [tc_latent_expand, zq[:, :tc_latent_expand.shape[1], :]], dim=-1)
+                [tc_latent_expand, content_features, zq[:, :tc_latent_expand.shape[1], :]], dim=-1)
             print(x.shape)
             x = rearrange(x, 'B T D -> B D T')
             x = self.generator.mel_decoder(x)
