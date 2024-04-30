@@ -69,13 +69,13 @@ class Mega2(nn.Module):
         self.generator.eval()
         #self.plm = PLMModel.from_pretrained(plm_ckpt, plm_config)
         #self.plm.eval()
-        #self.adm = ADM.from_pretrained(adm_ckpt, adm_config)
-        #self.adm.eval()
+        self.adm = ADM.from_pretrained(adm_ckpt, adm_config)
+        self.adm.eval()
 
         self.plm = MegaPLM.from_pretrained(plm_ckpt, plm_config)
         self.plm.eval()
-        self.adm = MegaADM.from_pretrained(adm_ckpt, adm_config)
-        self.adm.eval()
+        #self.adm = MegaADM.from_pretrained(adm_ckpt, adm_config)
+        #self.adm.eval()
 
 
         self.ttc = TokensCollector(symbol_table)

@@ -6,8 +6,8 @@ if __name__ == '__main__':
         g_config='configs/config_gan.yaml',
         plm_ckpt='/data/sky/plm.ckpt',
         plm_config='configs/config_plm_main.yaml',
-        adm_ckpt='/data/sky/adm1.ckpt',
-        adm_config='configs/config_adm_main.yaml',
+        adm_ckpt='/data/sky/adm.ckpt',
+        adm_config='configs/config_adm.yaml',
         symbol_table='/data/sky/data/ds/unique_text_tokens.k2symbols'
     )
 
