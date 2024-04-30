@@ -9,9 +9,8 @@ import yaml
 
 class PLMModel(nn.Module):
     def __init__(self, 
-                 d_model=2048, 
                  n_heads=16, 
-                 n_layers=24, 
+                 n_layers=12, 
                  vq_bins = 1024,
                  vq_dim = 512,
                  tc_latent_dim: int = 512,
@@ -20,7 +19,7 @@ class PLMModel(nn.Module):
        
         # decoder_layer = TransformerDecoderLayer(d_model, nhead, dim_feedforward, dropout)
         # self.transformer_decoder = TransformerDecoder(decoder_layer, num_decoder_layers)
-        td_model = vq_dim + tc_latent_dim
+        td_model = vq_dim + tc_latent_dim # 1024
 
         self.plm = TransformerEncoder(
             TransformerEncoderLayer(
@@ -37,7 +36,7 @@ class PLMModel(nn.Module):
             dim_model=td_model,
         )
 
-        self.pc_embedding = nn.Embedding(vq_bins + 2, vq_dim)
+        self.pc_embedding = nn.Embedding(vq_bins + 2, vq_dim) #加上bos,eos
 
         self.output_layer = nn.Linear(td_model, td_model, bias=False)
 
