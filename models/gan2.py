@@ -75,11 +75,11 @@ class VQGANTTS(nn.Module):
         return mel_output.masked_fill(mask, 0.)
     
    
-    def forward(self, duration_tokens, text, ref_audio, ref_audios):
+    def forward(self, duration_tokens, text, src_pos, ref_audio, ref_audios):
 
         # Content Encoder forward pass
         # self.content_encoder.forward(src_seq, src_seq)
-        content_features = self.content_encoder(text)
+        content_features = self.content_encoder(text, src_pos)
 
         ref_audio = ref_audio.permute(0,2,1)
         ref_audios = ref_audios.permute(0,2,1)
