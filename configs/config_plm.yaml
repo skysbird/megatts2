@@ -36,7 +36,7 @@ model:
   plm:
     class_path: models.plm.PLMModel
     init_args:
-      n_layers: 24
+      n_layers: 12
       n_heads: 16
       vq_dim: 512
       tc_latent_dim: 512
@@ -54,4 +54,4 @@ data:
   num_workers: 4
   max_n_cuts: 15
   class_path: modules.datamodule.TTSDataModule
-ckpt_path: null
+ckpt_path: /data/sky/plm_m.ckpt
