@@ -130,6 +130,17 @@ class TTSDataset(torch.utils.data.Dataset):
 
         mel_timbres = torch.stack(mel_timbres_list_cutted).type(torch.float32)
 
+        length_text = np.array([])
+        for text in phone_tokens:
+            length_text = np.append(length_text, text.size(0))
+
+        src_pos = list()
+        max_len = int(max(length_text))
+        for length_src_row in length_text:
+            src_pos.append(np.pad([i+1 for i in range(int(length_src_row))],
+                                (0, max_len-int(length_src_row)), 'constant'))
+        src_pos = torch.from_numpy(np.array(src_pos))
+
         batch = {
             "phone_tokens":  phone_tokens,
             "duration_tokens": duration_tokens,
@@ -137,6 +148,7 @@ class TTSDataset(torch.utils.data.Dataset):
             "mel_targets": mel_targets,  #
             "mel_target_lens": mel_target_lens,
             "mel_timbres": mel_timbres, #相同说话人组合一起
+            "src_pos": src_pos
         }
 
         return batch
