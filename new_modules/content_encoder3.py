@@ -77,12 +77,12 @@ class FastSpeechContentEncoder(nn.Module):
     def __init__(self,
                  n_src_vocab=320,
                  len_max_seq=320,
-                 d_word_vec=256,
-                 n_layers=4,
+                 d_word_vec=512,
+                 n_layers=8,
                  n_head=2,
-                 d_k=256 // 2,
-                 d_v=256 // 2,
-                 d_model=256,
+                 d_k=512 // 2,
+                 d_v=512 // 2,
+                 d_model=512,
                  d_inner=1024,
                  dropout=0.1):
 

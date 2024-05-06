@@ -2,7 +2,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from new_modules.content_encoder2 import FastSpeechContentEncoder
+from new_modules.content_encoder3 import FastSpeechContentEncoder
 from new_modules.mrte2 import MRTE2
 from new_modules.mel_decoder import MelDecoder
 from new_modules.vq_prosody_encoder import VQProsodyEncoder
