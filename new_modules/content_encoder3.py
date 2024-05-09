@@ -3,7 +3,7 @@ import torch.nn as nn
 from torch.nn import TransformerEncoder, TransformerEncoderLayer
 import math
 from .embedding import SinePositionalEmbedding
-import Constants
+from new_modules import Constants
 from new_modules.SubLayers import MultiHeadAttention, PositionwiseFeedForward
 import numpy as np
 
@@ -88,6 +88,8 @@ class FastSpeechContentEncoder(nn.Module):
 
         super(FastSpeechContentEncoder, self).__init__()
 
+        self.d_model = d_model
+
         n_position = len_max_seq + 1
 
         self.src_word_emb = nn.Embedding(n_src_vocab,
@@ -120,4 +122,4 @@ class FastSpeechContentEncoder(nn.Module):
             if return_attns:
                 enc_slf_attn_list += [enc_slf_attn]
 
-        return enc_output, non_pad_mask
+        return enc_output#, non_pad_mask

@@ -39,6 +39,7 @@ class PLMModel(nn.Module):
         self.pc_embedding = nn.Embedding(vq_bins + 2, vq_dim) #加上bos,eos
 
         self.output_layer = nn.Linear(td_model, td_model, bias=False)
+        self.dropout = nn.Dropout(0.1)
 
     def forward(
             self,
@@ -52,6 +53,9 @@ class PLMModel(nn.Module):
 
         x = self.plm(x_pos, lens, causal=True)
         logits = self.output_layer(x)
+
+        logits = self.dropout(logits)
+
 
         target = p_codes[:, 1:]
 

@@ -49,7 +49,7 @@ model:
 data:
   ds_path: /data/sky/data/ds/
   dataset: MegaADMDataset
-  max_duration_batch: 400
+  max_duration_batch: 120
   min_duration: 2.1
   max_duration: 20
   num_buckets: 10
