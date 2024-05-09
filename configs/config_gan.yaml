@@ -38,13 +38,7 @@ model:
     class_path: models.gan2.VQGANTTS
     init_args:
       content_encoder:
-        class_path: new_modules.content_encoder2.FastSpeechContentEncoder
-        init_args:
-          d_model: 512
-          nhead: 2
-          num_encoder_layers: 8
-          dim_feedforward: 1024
-          dropout: 0.1
+        class_path: new_modules.content_encoder3.FastSpeechContentEncoder
       mrte:
         class_path: new_modules.mrte2.MRTE2
         init_args:

@@ -131,10 +131,12 @@ class Mega2(nn.Module):
         mels = mels.unsqueeze(0)
 
         # G2P
+        print("text",text)
         ps = make_g2p(text)
         print(ps)
         
-        
+       
+        #ps = ['n', 'ɛ', 'v', 'ɚ', 'm', 'aj', 'n', 'd', 'w', 'ɐ', 't', 'ɪ', 't', 'ʃ', 'əw', 'z', '<sil>', 'w', 'ɑ', 't', 's', 'z', 'i', 'ɛ', 'k', 's', 'p', 'l', 'ə', 'ɲ', 'ej', 'ʃ', 'ə', 'n']
         phone_tokens = self.ttc.phone2token(
             ps)
         print(phone_tokens)
@@ -152,6 +154,10 @@ class Mega2(nn.Module):
 
 
             dt = self.adm.infer(tc_latent)[..., 0]
+            print(dt)
+#            dt = torch.tensor([[10, 14, 6, 11, 5, 3, 7, 2, 4, 5, 6, 3, 2, 2, 10, 3, 3, 7, 3, 4, 3, 8, 2, 4, 10, 4, 7, 8, 10, 4, 2, 2, 4, 12]])
+
+            print(dt)
 
             content_features = self.generator.content_encoder(phone_tokens)
             content_features = self.lr(content_features, dt)
@@ -181,8 +187,8 @@ class Mega2(nn.Module):
             x = self.generator.mel_decoder(x)
 
             audio = self.hifi_gan.decode_batch(x.cpu())
- 
-            torchaudio.save('test.wav', audio[0], HIFIGAN_SR)
+
+            return audio
 
     def forward(
             self,

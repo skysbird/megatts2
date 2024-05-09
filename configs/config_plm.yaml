@@ -16,6 +16,9 @@ trainer:
         save_top_k: 5
         save_last: true
         every_n_epochs: 1
+        mode: 'min'  # 寻找最小损失
+        save_last: true  # 可选，保存最后一个checkpoint
+
     - class_path: lightning.pytorch.callbacks.LearningRateMonitor
       init_args:
         logging_interval: step
@@ -54,4 +57,3 @@ data:
   num_workers: 4
   max_n_cuts: 15
   class_path: modules.datamodule.TTSDataModule
-ckpt_path: /data/sky/plm_m.ckpt

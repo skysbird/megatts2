@@ -142,14 +142,14 @@ class VQGANTTS(nn.Module):
         return attn_output
 
 
-    def s2_latent(self,  text, ref_audio, ref_audios, duration_tokens):
+    def s2_latent(self,  text, src_pos, ref_audio, ref_audios, duration_tokens):
         #
         #  batch['phone_tokens'].cuda(),
         #             batch['mel_targets'].cuda(),
         #             batch['mel_timbres'].cuda(),
         #             batch['duration_tokens'].cuda(),
 
-        content_features = self.content_encoder(text)
+        content_features = self.content_encoder(text,src_pos)
 
         ref_audio = ref_audio.permute(0,2,1)
         ref_audios = ref_audios.permute(0,2,1)
