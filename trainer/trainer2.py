@@ -457,17 +457,19 @@ class MegaDPTrainer(pl.LightningModule):
 
         # target
         target = batch["duration_tokens"]
+        target.requires_grad = False 
 
+        loss = F.l1_loss(duration_tokens_predict,target)
         # ignore padding
-        loss = F.mse_loss(duration_tokens_predict, target, reduction="sum")
-        loss_log = loss / target.shape[0] / target.shape[1]
+        # loss = F.mse_loss(duration_tokens_predict, target, reduction="sum")
+        # loss_log = loss / target.shape[0] / target.shape[1]
 
-        return loss, loss_log
+        return loss
     
     def training_step(self, batch: dict, batch_idx, **kwargs):
         with torch.cuda.amp.autocast(dtype=self.train_dtype):
             self.dp.train()
-            loss, loss_log = self(batch)
+            loss = self(batch)
 
         if batch_idx % 5 == 0:
             self.log("train/loss", loss_log, prog_bar=True)
@@ -480,7 +482,7 @@ class MegaDPTrainer(pl.LightningModule):
     def validation_step(self, batch: torch.Tensor, **kwargs):
         with torch.no_grad():
             self.dp.eval()
-            _, loss_log = self(batch)
+            loss_log = self(batch)
 
         self.validation_step_outputs.append({
             "loss_log": loss_log
