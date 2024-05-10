@@ -6,7 +6,7 @@ text_cleaners = ['english_cleaners']
 vocab_size = 300
 max_seq_len = 3000
 
-encoder_dim = 256
+encoder_dim = 512
 encoder_n_layer = 4
 encoder_head = 2
 encoder_conv1d_filter_size = 1024
