@@ -228,6 +228,12 @@ class DatasetMaker:
 
     def extract_latent(self):
 
+
+        def filter_duration(c):
+            if c.duration < 0 or c.duration > 20:
+                return False
+            return True
+
         os.system(f'mkdir -p {self.args.ds_path}/latents')
 
         G = VQGANTTS.from_pretrained(dm.args.generator_ckpt, dm.args.generator_config)
@@ -245,6 +251,9 @@ class DatasetMaker:
         ttsds = TTSDataset(spk_cs, f'{dm.args.ds_path}', 10)
 
         for c in tqdm(cs_all):
+            if filter_duration(c) == False:
+                print("duration skip",c.duration)
+                continue
             id = c.recording_id
             spk = c.supervisions[0].speaker
             batch = ttsds.__getitem__(CutSet.from_cuts([c]))
