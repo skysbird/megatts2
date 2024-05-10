@@ -29,7 +29,7 @@ import torch.nn.functional as F
 import torchaudio
 from einops import rearrange
 import glob
-
+import numpy as np
 
 
 language = "english_us_mfa"
@@ -148,7 +148,12 @@ class Mega2(nn.Module):
             mels_prompt = mels_prompt.unsqueeze(0)
             print(phone_tokens.shape)
             print(mels_prompt.shape)
-            tc_latent = self.generator.s2_latent_o(phone_tokens, mels_prompt, mels)
+
+            src_pos = [i+1 for i in range(int(len(phone_tokens)))]
+            
+            src_pos = torch.from_numpy(np.array(src_pos))
+
+            tc_latent = self.generator.s2_latent_o(src_pos, phone_tokens, mels_prompt, mels)
             print("t1",tc_latent)
 
 

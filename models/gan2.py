@@ -124,9 +124,9 @@ class VQGANTTS(nn.Module):
         
         return mel_output,loss,vq_loss
 
-    def s2_latent_o(self,  text, ref_audio, ref_audios):
+    def s2_latent_o(self,  src_pos, text, ref_audio, ref_audios):
 
-        content_features = self.content_encoder(text)
+        content_features = self.content_encoder(text, src_pos)
 
         ref_audio = ref_audio.permute(0,2,1)
         ref_audios = ref_audios.permute(0,2,1)
