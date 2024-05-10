@@ -466,7 +466,7 @@ class MegaDPTrainer(pl.LightningModule):
     
     def training_step(self, batch: dict, batch_idx, **kwargs):
         with torch.cuda.amp.autocast(dtype=self.train_dtype):
-            self.adm.train()
+            self.dp.train()
             loss, loss_log = self(batch)
 
         if batch_idx % 5 == 0:
@@ -479,7 +479,7 @@ class MegaDPTrainer(pl.LightningModule):
 
     def validation_step(self, batch: torch.Tensor, **kwargs):
         with torch.no_grad():
-            self.adm.eval()
+            self.dp.eval()
             _, loss_log = self(batch)
 
         self.validation_step_outputs.append({
