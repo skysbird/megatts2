@@ -269,6 +269,7 @@ class MegaADMDataset(torch.utils.data.Dataset):
         tc_latent_list = []
         lens = []
         phone_tokens_list = []
+        src_pos_list = []
 
 
         # mel_targets, mel_target_lens = collate_features(
@@ -314,6 +315,15 @@ class MegaADMDataset(torch.utils.data.Dataset):
 
             phone_tokens_list.append(self.tokens_collector.phone2token(phone_tokens))
 
+
+            # length_text = np.array([])
+            # for text in phone_tokens:
+            #     length_text = np.append(length_text, text.size(0))
+
+            # max_len = int(max(length_text))
+            # for length_src_row in length_text:
+            src_pos_list.append([i+1 for i in range(int(len(phone_tokens)))])
+
             duration_token_list.append(duration_tokens)
             tc_latent_list.append(tc_latent)
             lens.append(duration_tokens.shape[0])
@@ -324,6 +334,7 @@ class MegaADMDataset(torch.utils.data.Dataset):
         duration_token_list_padded = []
         tc_latent_list_padded = []
         phone_tokens_list_padded = []
+        src_pos_list_padded = []
 
         for i in range(len(duration_token_list)):
             duration_token_list_padded.append(F.pad(
@@ -332,12 +343,19 @@ class MegaADMDataset(torch.utils.data.Dataset):
                 tc_latent_list[i], (0, 0, 0, max_len - lens[i]), mode='constant', value=0))
             phone_tokens_list_padded.append(F.pad(
                 phone_tokens_list[i], (0, max_len - lens[i]), mode='constant', value=0))
-        
+            src_pos_list_padded.append(F.pad(
+                src_pos_list[i], (0, max_len - lens[i]), mode='constant', value=0))
+            
         phone_tokens = torch.stack(phone_tokens_list_padded)
         duration_tokens = torch.stack(duration_token_list_padded).type(
             torch.float32).unsqueeze(-1)
         tc_latents = torch.stack(tc_latent_list_padded).type(torch.float32)
         lens = torch.Tensor(lens).to(dtype=torch.int32)
+        src_pos = torch.stack(src_pos_list_padded)
+
+
+        
+
 
         print(duration_tokens.shape)
         print(tc_latents.shape)
@@ -347,7 +365,8 @@ class MegaADMDataset(torch.utils.data.Dataset):
             "duration_tokens": duration_tokens,
             "tc_latents": tc_latents,
             "lens": lens,
-            "phone_tokens": phone_tokens
+            "phone_tokens": phone_tokens,
+            "src_pos": src_pos,
         }
 
         return batch
