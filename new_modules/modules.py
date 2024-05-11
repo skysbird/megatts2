@@ -12,6 +12,7 @@ import hparams as hp
 import utils
 import yaml
 from utils.utils import instantiate_class
+from new_modules.content_encoder3 import FastSpeechContentEncoder
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -106,6 +107,9 @@ class DurationPredictor(nn.Module):
         self.conv_output_size = hp.duration_predictor_filter_size
         self.dropout = hp.dropout
 
+        self.content_encoder = FastSpeechContentEncoder()
+
+
         self.conv_layer = nn.Sequential(OrderedDict([
             ("conv1d_1", Conv(self.input_size,
                               self.filter_size,
@@ -127,6 +131,7 @@ class DurationPredictor(nn.Module):
         self.relu = nn.ReLU()
 
     def forward(self, encoder_output):
+        encoder_output = self.content_encoder(encoder_output)
         out = self.conv_layer(encoder_output)
         out = self.linear_layer(out)
         out = self.relu(out)
