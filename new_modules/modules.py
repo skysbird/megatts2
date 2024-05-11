@@ -10,6 +10,9 @@ import math
 
 import hparams as hp
 import utils
+import yaml
+from utils.utils import instantiate_class
+
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -131,6 +134,23 @@ class DurationPredictor(nn.Module):
         if not self.training:
             out = out.unsqueeze(0)
         return out
+    
+    @classmethod
+    def from_pretrained(self, ckpt: str, config: str) -> "DurationPredictor":
+
+        with open(config, "r") as f:
+            config = yaml.safe_load(f)
+
+            adm_config = config['model']['dp']
+            adm = instantiate_class(args=(), init=adm_config)
+
+        state_dict = {}
+        for k, v in torch.load(ckpt)['state_dict'].items():
+            if k.startswith('dp.'):
+                state_dict[k[4:]] = v
+
+        adm.load_state_dict(state_dict, strict=True)
+        return adm
 
 
 class BatchNormConv1d(nn.Module):

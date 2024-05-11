@@ -7,6 +7,8 @@ from new_modules.embedding import SinePositionalEmbedding
 from models.gan2 import VQGANTTS
 from models.adm import ADM
 from models.plm import PLMModel
+from new_modules.modules import DurationPredictor
+
 from models.megatts2 import MegaADM,MegaPLM
 
 from modules.mrte import LengthRegulator
@@ -71,6 +73,9 @@ class Mega2(nn.Module):
         self.plm.eval()
         self.adm = ADM.from_pretrained(adm_ckpt, adm_config)
         self.adm.eval()
+
+        self.dp = DurationPredictor.from_pretrained(adm_ckpt, adm_config)
+        self.dp.eval()
 
         #self.plm = MegaPLM.from_pretrained(plm_ckpt, plm_config)
         #self.plm.eval()
@@ -158,7 +163,7 @@ class Mega2(nn.Module):
 
 
 
-            dt = self.adm.infer(tc_latent)[..., 0]
+            dt = self.dp(tc_latent)[..., 0]
             print(dt)
 #            dt = torch.tensor([[10, 14, 6, 11, 5, 3, 7, 2, 4, 5, 6, 3, 2, 2, 10, 3, 3, 7, 3, 4, 3, 8, 2, 4, 10, 4, 7, 8, 10, 4, 2, 2, 4, 12]])
 
