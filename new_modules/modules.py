@@ -130,8 +130,8 @@ class DurationPredictor(nn.Module):
         self.linear_layer = Linear(self.conv_output_size, 1)
         self.relu = nn.ReLU()
 
-    def forward(self, encoder_output):
-        encoder_output = self.content_encoder(encoder_output)
+    def forward(self, encoder_output,src_pos):
+        encoder_output = self.content_encoder(encoder_output,src_pos)
         out = self.conv_layer(encoder_output)
         out = self.linear_layer(out)
         out = self.relu(out)
@@ -152,7 +152,7 @@ class DurationPredictor(nn.Module):
         state_dict = {}
         for k, v in torch.load(ckpt)['state_dict'].items():
             if k.startswith('dp.'):
-                state_dict[k[4:]] = v
+                state_dict[k[3:]] = v
 
         adm.load_state_dict(state_dict, strict=True)
         return adm

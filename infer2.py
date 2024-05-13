@@ -13,21 +13,29 @@ if __name__ == '__main__':
         plm_config='configs/config_plm.yaml',
         adm_ckpt='/data/sky/adm.ckpt',
         adm_config='configs/config_adm.yaml',
+        dp_ckpt='/data/sky/dp_p.ckpt',
+        dp_config='configs/config_adm_dp.yaml',
+
         symbol_table='/data/sky/data/ds/unique_text_tokens.k2symbols'
     )
 
     megatts.eval()
 
 #    text = 'Also, a popular contrivance whereby'
-#    text = 'Do you think this day is a good day?'
+    text = 'Do you think this day is a good day?'
 #    text = 'I wish I could be more like you.'
-    text = "I smiled at him with something approaching kindness."
+#    text = "There could be little art in this last and final round of fencing."
+#    text = 'And lay me down in thy cold bed and leave my shining lot.' 
+#    text = 'Number ten, fresh nelly is waiting on you, good night husband.'
+
     audio = megatts.infer(
         '/data/sky/data/wavs/986/',
         text,      
-#        '/data/sky/data/wavs/4145/4145_104606_000049_000000.wav'
-        '/data/sky/my.wav'
+        '/data/sky/data/wavs/4145/4145_104606_000049_000000.wav'
+#        '/data/sky/my.wav'
 #        '/data/sky/data/wavs/16/16_122827_000001_000000.wav'
+#        '/data/sky/megatts2/xtts_aishell2libri_34_ch_prompts.wav'
+#        '/data/sky/megatts2/wavs/librispeech_908-157963-0027_gt.wav'
     )
 
 
