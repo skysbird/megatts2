@@ -338,7 +338,7 @@ class MegaADMDataset(torch.utils.data.Dataset):
 
         for i in range(len(duration_token_list)):
             duration_token_list_padded.append(F.pad(
-                duration_token_list[i], (0, max_len - lens[i]), mode='constant', value=0))
+                duration_token_list[i], (1, max_len - lens[i]), mode='constant', value=0))
             tc_latent_list_padded.append(F.pad(
                 tc_latent_list[i], (0, 0, 0, max_len - lens[i]), mode='constant', value=0))
             phone_tokens_list_padded.append(F.pad(
