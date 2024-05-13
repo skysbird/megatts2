@@ -104,8 +104,8 @@ class Mega2(nn.Module):
         self.adm = ADM.from_pretrained(adm_ckpt, adm_config)
         self.adm.eval()
 
-        self.dp = DurationPredictor.from_pretrained(dp_ckpt, dp_config)
-        self.dp.eval()
+#        self.dp = DurationPredictor.from_pretrained(dp_ckpt, dp_config)
+#        self.dp.eval()
 
         #self.plm = MegaPLM.from_pretrained(plm_ckpt, plm_config)
         #self.plm.eval()
@@ -193,9 +193,9 @@ class Mega2(nn.Module):
 
 
 
-            #dt = self.dp(tc_latent)[..., 0]
+            dt = self.adm.infer(tc_latent)[..., 0]
             #dt = self.dp(tc_latent)
-            dt = self.dp(phone_tokens, src_pos)
+#            dt = self.dp(phone_tokens, src_pos)
 #            dt = dt + 0.5
             dt = torch.round(dt).to(torch.int32)
 
