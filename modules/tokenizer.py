@@ -105,13 +105,15 @@ class AudioFeatExtraConfig:
 
 
 def extract_mel_spec(samples):
+
+    nftt = min(HIFIGAN_MAX_FREQ,samples.shape[-1]*2)
     mel_spec, _ = mel_spectogram(
         audio=samples,
         sample_rate=HIFIGAN_SR,
         hop_length=HIFIGAN_HOP_LENGTH,
         win_length=HIFIGAN_WIN_LENGTH,
         n_mels=HIFIGAN_MEL_CHANNELS,
-        n_fft=HIFIGAN_NFFT,
+        n_fft=nftt,
         f_min=0,
         f_max=HIFIGAN_MAX_FREQ,
         power=1,
