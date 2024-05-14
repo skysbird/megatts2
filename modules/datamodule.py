@@ -322,7 +322,7 @@ class MegaADMDataset(torch.utils.data.Dataset):
 
             # max_len = int(max(length_text))
             # for length_src_row in length_text:
-            src_pos_list.append([i+1 for i in range(int(len(phone_tokens)))])
+            src_pos_list.append(torch.Tensor([i+1 for i in range(int(len(phone_tokens)))]).type(torch.int64))
 
             duration_token_list.append(duration_tokens)
             tc_latent_list.append(tc_latent)

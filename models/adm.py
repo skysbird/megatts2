@@ -120,6 +120,7 @@ class ADM(nn.Module):
 
         state_dict = {}
         for k, v in torch.load(ckpt)['state_dict'].items():
+            print(k)
             if k.startswith('adm.'):
                 state_dict[k[4:]] = v
 

@@ -451,15 +451,30 @@ class MegaDPTrainer(pl.LightningModule):
         )
     
     def forward(self, batch: dict):
+        #duration_tokens_predict = self.dp(
+        #    batch["tc_latents"],
+        #)
+
+        print("tc_latent",batch["tc_latents"].shape)
+        print("phone_tokens",batch["phone_tokens"].shape)
+
         duration_tokens_predict = self.dp(
-            batch["tc_latents"],
+            batch["phone_tokens"],batch["src_pos"]
         )
+
 
         # target
         target = batch["duration_tokens"]
         target.requires_grad = False 
 
+
+        duration_tokens_predict = duration_tokens_predict.squeeze()
+        target = target.squeeze(-1)
+        print("dp",duration_tokens_predict.shape)
+        print("target",target.shape)
+
         loss = F.l1_loss(duration_tokens_predict,target)
+
         # ignore padding
         # loss = F.mse_loss(duration_tokens_predict, target, reduction="sum")
         # loss_log = loss / target.shape[0] / target.shape[1]
@@ -472,7 +487,7 @@ class MegaDPTrainer(pl.LightningModule):
             loss = self(batch)
 
         if batch_idx % 5 == 0:
-            self.log("train/loss", loss_log, prog_bar=True)
+            self.log("train/loss", loss, prog_bar=True)
 
         return loss
     

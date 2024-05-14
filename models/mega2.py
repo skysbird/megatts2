@@ -32,7 +32,7 @@ import torchaudio
 from einops import rearrange
 import glob
 import numpy as np
-
+import re
 
 language = "english_us_mfa"
 
@@ -40,19 +40,47 @@ language = "english_us_mfa"
 manager = ModelManager()
 manager.download_model("g2p", language)
 
+#def make_g2p(text):
+#    g2p_model_path = G2PModel.get_pretrained_path(language)
+#    
+#    g2p = PyniniConsoleGenerator(
+#                g2p_model_path=g2p_model_path,
+#                num_pronunciations=1
+#            )
+#    g2p.setup()
+#    
+#    word =text.lower()
+#    pronunciations = g2p.rewriter(word)
+#    [print(p) for p in pronunciations]
+#    return pronunciations[0].split()
+
+
 def make_g2p(text):
     g2p_model_path = G2PModel.get_pretrained_path(language)
     
     g2p = PyniniConsoleGenerator(
-                g2p_model_path=g2p_model_path,
-                num_pronunciations=1
-            )
+        g2p_model_path=g2p_model_path,
+        num_pronunciations=1
+    )
     g2p.setup()
     
-    word =text.lower()
-    pronunciations = g2p.rewriter(word)
-    [print(p) for p in pronunciations]
-    return pronunciations[0].split()
+    # 分离文本中的单词和标点
+    tokens = re.findall(r'\w+|[,.?!;]', text)
+    processed_pronunciations = []
+    for token in tokens:
+        # 检查是否为标点符号
+        if re.fullmatch(r'[,.?!;]', token):
+            # 对于标点，使用<sil>
+            processed_pronunciations.append('<sil>')
+        else:
+            # 对于非标点单词，生成音素
+            pronunciations = g2p.rewriter(token.lower())
+            # 假设生成的音素只有一个
+            processed_pronunciations.extend(pronunciations[0].split())
+
+    print(processed_pronunciations)
+    return processed_pronunciations
+
 
 class Mega2(nn.Module):
     def __init__(
@@ -63,6 +91,8 @@ class Mega2(nn.Module):
         plm_config: str,
         adm_ckpt: str,
         adm_config: str,
+        dp_ckpt: str,
+        dp_config: str,
         symbol_table: str
     ):
         super(Mega2, self).__init__()
@@ -74,8 +104,8 @@ class Mega2(nn.Module):
         self.adm = ADM.from_pretrained(adm_ckpt, adm_config)
         self.adm.eval()
 
-        self.dp = DurationPredictor.from_pretrained(adm_ckpt, adm_config)
-        self.dp.eval()
+#        self.dp = DurationPredictor.from_pretrained(dp_ckpt, dp_config)
+#        self.dp.eval()
 
         #self.plm = MegaPLM.from_pretrained(plm_ckpt, plm_config)
         #self.plm.eval()
@@ -163,13 +193,18 @@ class Mega2(nn.Module):
 
 
 
-            dt = self.dp(tc_latent)[..., 0]
+            dt = self.adm.infer(tc_latent)[..., 0]
+            #dt = self.dp(tc_latent)
+#            dt = self.dp(phone_tokens, src_pos)
+#            dt = dt + 0.5
+            dt = torch.round(dt).to(torch.int32)
+
             print(dt)
 #            dt = torch.tensor([[10, 14, 6, 11, 5, 3, 7, 2, 4, 5, 6, 3, 2, 2, 10, 3, 3, 7, 3, 4, 3, 8, 2, 4, 10, 4, 7, 8, 10, 4, 2, 2, 4, 12]])
 
             print(dt)
 
-            content_features = self.generator.content_encoder(phone_tokens)
+            content_features = self.generator.content_encoder(phone_tokens,src_pos)
             content_features = self.lr(content_features, dt)
 
             # x, _ = self.generator(dt, phone_tokens,mels,mels )
