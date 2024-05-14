@@ -111,7 +111,7 @@ def extract_mel_spec(samples):
         audio=samples,
         sample_rate=HIFIGAN_SR,
         hop_length=HIFIGAN_HOP_LENGTH,
-        win_length=HIFIGAN_WIN_LENGTH,
+        win_length=nftt,
         n_mels=HIFIGAN_MEL_CHANNELS,
         n_fft=nftt,
         f_min=0,

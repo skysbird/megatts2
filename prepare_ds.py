@@ -280,34 +280,183 @@ class DatasetMaker:
 
             np.save(f'{self.args.ds_path}/latents/{spk}/{id}.npy', s2_latent)
 
-if __name__ == '__main__':
-    dm = DatasetMaker()
+# if __name__ == '__main__':
+#     dm = DatasetMaker()
 
-    # Create lab files
-    if dm.args.stage == 0:
-        dm.make_labs()
-    elif dm.args.stage == 1:
-        dm.make_ds()
+#     # Create lab files
+#     if dm.args.stage == 0:
+#         dm.make_labs()
+#     elif dm.args.stage == 1:
+#         dm.make_ds()
 
-        # Test
-        cs_train = load_manifest_lazy(
-            f'{dm.args.ds_path}/cuts_train.jsonl.gz')
-        cs_valid = load_manifest_lazy(
-            f'{dm.args.ds_path}/cuts_valid.jsonl.gz')
-        cs = cs_train + cs_valid
+#         # Test
+#         cs_train = load_manifest_lazy(
+#             f'{dm.args.ds_path}/cuts_train.jsonl.gz')
+#         cs_valid = load_manifest_lazy(
+#             f'{dm.args.ds_path}/cuts_valid.jsonl.gz')
+#         cs = cs_train + cs_valid
 
-        unique_symbols = set()
+#         unique_symbols = set()
 
-        for c in tqdm(cs):
-            unique_symbols.update(c.supervisions[0].custom["phone_tokens"])
+#         for c in tqdm(cs):
+#             unique_symbols.update(c.supervisions[0].custom["phone_tokens"])
 
-        unique_phonemes = SymbolTable()
-        for s in sorted(list(unique_symbols)):
-            unique_phonemes.add(s)
+#         unique_phonemes = SymbolTable()
+#         for s in sorted(list(unique_symbols)):
+#             unique_phonemes.add(s)
 
-        unique_phonemes_file = f"unique_text_tokens.k2symbols"
-        unique_phonemes.to_file(f'{dm.args.ds_path}/{unique_phonemes_file}')
+#         unique_phonemes_file = f"unique_text_tokens.k2symbols"
+#         unique_phonemes.to_file(f'{dm.args.ds_path}/{unique_phonemes_file}')
 
-        print(cs.describe())
-    elif dm.args.stage == 2:
-        dm.extract_latent()
+#         print(cs.describe())
+#     elif dm.args.stage == 2:
+#         dm.extract_latent()
+
+
+from typing import Dict
+
+
+punctuation = '!,.?"'
+
+
+def get_phoneme_durations(
+    data: Dict, original_text: str, fs: int, hop_size: int, n_samples: int
+):
+    """Get phoneme durations."""
+    orig_text = original_text.replace(" ", "").rstrip()
+    # orig_text = original_text.rstrip()
+    text_pos = 0
+    maxTimestamp = data["end"]
+    words = [x for x in data["tiers"]["words"]["entries"]]
+    phones = (x for x in data["tiers"]["phones"]["entries"])
+    word_end = 0.0
+    time2punc = {}
+    phrase_words = []
+    for word in words:
+        start, end, label = word
+        if start == word_end:
+            phrase_words.append(label)
+            time2punc[(start,start)] = [' ']
+        else:
+            # find punctuation at end of previous phrase
+            phrase = "".join(phrase_words)
+            for letter in phrase:
+                char = orig_text[text_pos]
+                while char != letter:
+                    text_pos += 1
+                    char = orig_text[text_pos]
+                text_pos += 1
+
+            timing = (word_end, start)
+            puncs = []
+            while text_pos < len(orig_text):
+                char = orig_text[text_pos]
+                if char.isalpha() or char == "'":
+                    break
+                else:
+                    puncs.append(char)
+                    puncs.append(" ")
+                    text_pos += 1
+            # print("a",timing)
+            time2punc[timing] = puncs if puncs else [" "]
+
+            phrase_words = [label]
+        
+        #add space
+        # print("add space")
+        # print(phrase_words)
+        # time2punc[(word_end,word_end)] = [' ']
+        word_end = end
+
+    # print(time2punc)
+    # We preserve the start/end timings and not interval lengths
+    #   due to rounding errors when converted to frames.
+    timings = [0.0]
+    new_phones = []
+    prev_end = 0.0
+    for phone in phones:
+        start, end, label = phone
+        if start == prev_end:
+            try:
+                puncs = time2punc[(prev_end, start)]
+                new_phones.extend(puncs)
+                num_puncs = len(puncs)
+                pause_time = (start - prev_end) / num_puncs
+                for i in range(1, len(puncs) + 1):
+                    timings.append(prev_end + pause_time * i)
+            except KeyError:
+                print("add space wrong")
+                pass
+
+        if start > prev_end:
+            # insert punctuation
+            try:
+                puncs = time2punc[(prev_end, start)]
+            except KeyError:
+                # In some cases MFA word segmentation fails
+                #   and there is a pause inside the word.
+                puncs = ["sil"]
+            new_phones.extend(puncs)
+            num_puncs = len(puncs)
+            pause_time = (start - prev_end) / num_puncs
+            for i in range(1, len(puncs) + 1):
+                timings.append(prev_end + pause_time * i)
+
+        new_phones.append(label)
+        timings.append(end)
+        prev_end = end
+
+    # Add end-of-utterance punctuations
+    if word_end < maxTimestamp:
+        text_pos = len(orig_text) - 1
+        while orig_text[text_pos] in punctuation:
+            text_pos -= 1
+        puncs = orig_text[text_pos + 1 :]
+        if not puncs:
+            puncs = ["sil"]
+        new_phones.extend(puncs)
+        num_puncs = len(puncs)
+        pause_time = (maxTimestamp - word_end) / num_puncs
+        for i in range(1, len(puncs) + 1):
+            timings.append(prev_end + pause_time * i)
+
+    assert len(new_phones) + 1 == len(timings)
+
+    # Should use same frame formulation for both
+    # STFT frames calculation: https://github.com/librosa/librosa/issues/1288
+    # centered stft
+
+    total_durations = int(n_samples / hop_size) + 1
+    timing_frames = [int(timing * fs / hop_size) + 1 for timing in timings]
+    durations = [
+        timing_frames[i + 1] - timing_frames[i] for i in range(len(timing_frames) - 1)
+    ]
+
+    sum_durations = sum(durations)
+    if sum_durations < total_durations:
+        missing = total_durations - sum_durations
+        durations[-1] += missing
+    assert sum(durations) == total_durations
+    return new_phones[1:], durations[1:]
+
+
+import json
+import codecs
+
+if __name__== "__main__":
+    tgt_path = '1027_125140_000009_000001.json'
+    with codecs.open(tgt_path, "r", encoding="utf-8") as reader:
+        _data_dict = json.load(reader)
+    # print(_data_dict)
+    wav_path = '1027_125140_000009_000001.wav'
+
+    with sf.SoundFile(wav_path) as audio:
+        orig_sr = audio.samplerate
+        # Account for downsampling
+        no_samples = int(audio.frames * (24_000 / orig_sr))
+
+    hop_size = 256
+    sr = 24_000
+    p,d = get_phoneme_durations(_data_dict, "He only learned that the more he himself knew, in his little limited human way, the better he could distantly imagine what Omniscience might know.".lower(), sr, hop_size, no_samples)
+    print(p)
+    print(d)
