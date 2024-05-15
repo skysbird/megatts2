@@ -323,23 +323,27 @@ def get_phoneme_durations(
     data: Dict, original_text: str, fs: int, hop_size: int, n_samples: int
 ):
     """Get phoneme durations."""
-    orig_text = original_text.replace(" ", "").rstrip()
+    orig_text = original_text.replace(r"\s", " ").rstrip()
     # orig_text = original_text.rstrip()
     text_pos = 0
     maxTimestamp = data["end"]
     words = [x for x in data["tiers"]["words"]["entries"]]
     phones = (x for x in data["tiers"]["phones"]["entries"])
-    word_end = 0.0
+    word_end = 0
     time2punc = {}
     phrase_words = []
+    last_punc = []
+
     for word in words:
         start, end, label = word
         if start == word_end:
             phrase_words.append(label)
-            time2punc[(start,start)] = [' ']
-        else:
+            if last_punc:
+                timing = (word_end, word_end)
+                time2punc[timing] = last_punc
+
             # find punctuation at end of previous phrase
-            phrase = "".join(phrase_words)
+            phrase = label
             for letter in phrase:
                 char = orig_text[text_pos]
                 while char != letter:
@@ -347,18 +351,44 @@ def get_phoneme_durations(
                     char = orig_text[text_pos]
                 text_pos += 1
 
-            timing = (word_end, start)
-            puncs = []
+            last_punc = []
             while text_pos < len(orig_text):
                 char = orig_text[text_pos]
                 if char.isalpha() or char == "'":
                     break
                 else:
-                    puncs.append(char)
-                    puncs.append(" ")
+                    last_punc.append(char)
+                    # puncs.append(" ")
+                    text_pos += 1
+
+            # time2punc[timing] = puncs if puncs else [" "]
+
+        else:
+            # find punctuation at end of previous phrase
+            # phrase = "".join(phrase_words)
+            if last_punc:
+                timing = (word_end, start)
+                time2punc[timing] = last_punc
+            
+            phrase = label
+            for letter in phrase:
+                char = orig_text[text_pos]
+                while char != letter:
+                    text_pos += 1
+                    char = orig_text[text_pos]
+                text_pos += 1
+
+            last_punc = []
+            while text_pos < len(orig_text):
+                char = orig_text[text_pos]
+                if char.isalpha() or char == "'":
+                    break
+                else:
+                    last_punc.append(char)
+                    # puncs.append(" ")
                     text_pos += 1
             # print("a",timing)
-            time2punc[timing] = puncs if puncs else [" "]
+
 
             phrase_words = [label]
         
@@ -368,7 +398,7 @@ def get_phoneme_durations(
         # time2punc[(word_end,word_end)] = [' ']
         word_end = end
 
-    # print(time2punc)
+    print(time2punc)
     # We preserve the start/end timings and not interval lengths
     #   due to rounding errors when converted to frames.
     timings = [0.0]
@@ -437,18 +467,19 @@ def get_phoneme_durations(
         missing = total_durations - sum_durations
         durations[-1] += missing
     assert sum(durations) == total_durations
-    return new_phones[1:], durations[1:]
+    assert len(new_phones) == len(durations)
+    return new_phones[:], durations[:]
 
 
 import json
 import codecs
 
 if __name__== "__main__":
-    tgt_path = '1027_125140_000009_000001.json'
+    tgt_path = '100_121669_000001_000000.json'
     with codecs.open(tgt_path, "r", encoding="utf-8") as reader:
         _data_dict = json.load(reader)
     # print(_data_dict)
-    wav_path = '1027_125140_000009_000001.wav'
+    wav_path = '100_121669_000001_000000.wav'
 
     with sf.SoundFile(wav_path) as audio:
         orig_sr = audio.samplerate
@@ -457,6 +488,6 @@ if __name__== "__main__":
 
     hop_size = 256
     sr = 24_000
-    p,d = get_phoneme_durations(_data_dict, "He only learned that the more he himself knew, in his little limited human way, the better he could distantly imagine what Omniscience might know.".lower(), sr, hop_size, no_samples)
+    p,d = get_phoneme_durations(_data_dict, "Tom, the Piper's Son".lower(), sr, hop_size, no_samples)
     print(p)
     print(d)
